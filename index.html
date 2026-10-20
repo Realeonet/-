@@ -177,28 +177,26 @@ details[open] summary { margin-bottom: 10px }
     <div class="card">
       <div class="step"><b>2</b><h2>Фото</h2></div>
       <p class="muted small">Общий план обязателен. Крупный план и эталон заметно снижают погрешность.</p>
+      <p class="note small">«Добавить фото» откроет выбор: «Камера» или «Галерея». Если камера не предлагается, снимите обычной камерой телефона и выберите снимки из галереи.</p>
       <div class="slot" data-role="overview">
         <header><h3>Общий план места</h3><span class="muted small">1–4 фото, видно всё место целиком</span></header>
         <div class="thumbs"></div>
         <div class="row">
-          <label class="btn grow">Снять<input type="file" accept="image/*" capture="environment"></label>
-          <label class="btn grow">Из галереи<input type="file" accept="image/*" multiple></label>
+          <label class="btn grow">Добавить фото<input type="file" accept="image/*" multiple></label>
         </div>
       </div>
       <div class="slot" data-role="close">
         <header><h3>Вблизи</h3><span class="muted small">торец стопки, один ряд, слой россыпи</span></header>
         <div class="thumbs"></div>
         <div class="row">
-          <label class="btn grow">Снять<input type="file" accept="image/*" capture="environment"></label>
-          <label class="btn grow">Из галереи<input type="file" accept="image/*" multiple></label>
+          <label class="btn grow">Добавить фото<input type="file" accept="image/*" multiple></label>
         </div>
       </div>
       <div class="slot" data-role="unit">
         <header><h3>Эталон: 1 единица</h3><span class="muted small">необязательно; рядом с рукой или рулеткой для масштаба</span></header>
         <div class="thumbs"></div>
         <div class="row">
-          <label class="btn grow">Снять<input type="file" accept="image/*" capture="environment"></label>
-          <label class="btn grow">Из галереи<input type="file" accept="image/*" multiple></label>
+          <label class="btn grow">Добавить фото<input type="file" accept="image/*" multiple></label>
         </div>
       </div>
     </div>
@@ -249,8 +247,7 @@ details[open] summary { margin-bottom: 10px }
       <h2>Отметить вручную на фото</h2>
       <p class="muted small">Нажимайте на каждую единицу (или коробку) — появится метка с номером. Нажатие на метку убирает её. Удобно, чтобы проверить ИИ или посчитать то, что ИИ видит плохо.</p>
       <div class="row">
-        <label class="btn grow">Снять<input id="mPhotoCam" type="file" accept="image/*" capture="environment"></label>
-        <label class="btn grow">Из галереи<input id="mPhoto" type="file" accept="image/*"></label>
+        <label class="btn grow">Добавить фото<input id="mPhoto" type="file" accept="image/*"></label>
         <button id="mFromAi" class="btn grow">Взять общий план</button>
       </div>
       <div class="stage" id="stage"><canvas id="mCanvas" width="10" height="10"></canvas></div>
@@ -689,7 +686,7 @@ cv.addEventListener("click", e => {
   if (hit >= 0) M.marks.splice(hit, 1); else M.marks.push({ x, y });
   drawManual();
 });
-for (const id of ["#mPhoto", "#mPhotoCam"]) $(id).onchange = e => { if (e.target.files[0]) loadManual(e.target.files[0]); e.target.value = ""; };
+$("#mPhoto").onchange = e => { if (e.target.files[0]) loadManual(e.target.files[0]); e.target.value = ""; };
 $("#mFromAi").onclick = () => photos.overview[0] ? loadManual(photos.overview[0].file) : (showTab("ai"), $("#runErr").textContent = "Сначала добавьте фото общего плана на вкладке «По фото».", $("#runErr").hidden = false);
 chipGroup($("#zoomChips"), "z", v => { M.zoom = +v; drawManual(); });
 chipGroup($("#dotChips"), "d", v => { M.dot = +v; drawManual(); });

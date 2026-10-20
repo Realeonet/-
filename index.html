@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Minkin</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d6336c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
 :root {
   --bg: #f5f6f8;
@@ -431,6 +435,7 @@ textarea:focus {
   </section>
 
   <p class="footer-note" data-i18n="footer"></p>
+  <p class="footer-note"><a href="privacy.html">Политика конфиденциальности</a></p>
 </main>
 
 <script>
@@ -1128,6 +1133,10 @@ loadPrefs();
 el.sourceText.lang = state.source;
 el.sourceText.dir = LANGS[state.source].dir;
 applyUI();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
 </body>
 </html>

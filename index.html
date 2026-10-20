@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Разговорник</title>
+<title>Minkin</title>
 <style>
 :root {
   --bg: #f5f6f8;
@@ -70,9 +70,22 @@ body {
   margin-bottom: 16px;
 }
 
-.app-header h1 {
+.brand h1 {
   font-size: 1.35rem;
   margin: 0;
+}
+
+.tagline {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .chips {
@@ -329,7 +342,10 @@ textarea:focus {
 <body>
 <main class="app">
   <header class="app-header">
-    <h1 data-i18n="appTitle">Разговорник</h1>
+    <div class="brand">
+      <h1 data-i18n="appTitle">Minkin · Переводчик</h1>
+      <p class="tagline" data-i18n="tagline">Звук на звук</p>
+    </div>
     <div class="chips" id="ui-langs" role="radiogroup" data-i18n-aria="uiLang"></div>
   </header>
 
@@ -361,6 +377,12 @@ textarea:focus {
       <p class="result-source" id="result-source" dir="auto"></p>
       <p class="result-target" id="result-target"></p>
       <button type="button" id="play-btn" class="btn btn-primary" data-i18n="play">▶ Воспроизвести</button>
+      <div class="share">
+        <button type="button" id="share-native" class="chip" data-i18n="share">Поделиться</button>
+        <button type="button" id="share-wa" class="chip">WhatsApp</button>
+        <button type="button" id="share-mail" class="chip" data-i18n="email">Email</button>
+        <button type="button" id="share-copy" class="chip" data-i18n="copy">Копировать</button>
+      </div>
     </div>
 
     <p id="status" class="status" role="status" aria-live="polite"></p>
@@ -393,7 +415,13 @@ const MIC_ERRORS = {
 
 const UI = {
   ru: {
-    appTitle: 'Разговорник',
+    appTitle: 'Minkin · Переводчик',
+    tagline: 'Звук на звук',
+    share: 'Поделиться',
+    email: 'Email',
+    copy: 'Копировать',
+    copied: 'Скопировано',
+    copyError: 'Не удалось скопировать',
     uiLang: 'Язык интерфейса',
     inputLabel: 'Язык ввода',
     outputLabel: 'Язык перевода',
@@ -423,7 +451,13 @@ const UI = {
     categories: { greet: 'Приветствия', basic: 'Базовое', food: 'Ресторан', transport: 'Транспорт', shop: 'Покупки', help: 'Помощь' },
   },
   es: {
-    appTitle: 'Guía de conversación',
+    appTitle: 'Minkin · Traductor',
+    tagline: 'Sonido a sonido',
+    share: 'Compartir',
+    email: 'Correo',
+    copy: 'Copiar',
+    copied: 'Copiado',
+    copyError: 'No se pudo copiar',
     uiLang: 'Idioma de la aplicación',
     inputLabel: 'Idioma de entrada',
     outputLabel: 'Idioma de traducción',
@@ -453,7 +487,13 @@ const UI = {
     categories: { greet: 'Saludos', basic: 'Básico', food: 'Restaurante', transport: 'Transporte', shop: 'Compras', help: 'Ayuda' },
   },
   he: {
-    appTitle: 'שיחון',
+    appTitle: 'Minkin · מתרגם',
+    tagline: 'קול לקול',
+    share: 'שתף',
+    email: 'אימייל',
+    copy: 'העתק',
+    copied: 'הועתק',
+    copyError: 'ההעתקה נכשלה',
     uiLang: 'שפת הממשק',
     inputLabel: 'שפת קלט',
     outputLabel: 'שפת תרגום',
@@ -551,6 +591,10 @@ const el = {
   resultSource: document.getElementById('result-source'),
   resultTarget: document.getElementById('result-target'),
   playBtn: document.getElementById('play-btn'),
+  shareNative: document.getElementById('share-native'),
+  shareWa: document.getElementById('share-wa'),
+  shareMail: document.getElementById('share-mail'),
+  shareCopy: document.getElementById('share-copy'),
   status: document.getElementById('status'),
   filters: document.getElementById('filters'),
   phraseList: document.getElementById('phrase-list'),
@@ -778,6 +822,36 @@ function showResult(sourceText, targetText) {
   setStatus('');
 }
 
+// Текст для отправки: исходная фраза, перевод и подпись приложения.
+function shareText() {
+  return `${el.resultSource.textContent}\n${el.resultTarget.textContent}\n\nMinkin`;
+}
+
+async function shareNative() {
+  try {
+    await navigator.share({ title: 'Minkin', text: shareText() });
+  } catch (error) {
+    if (error.name !== 'AbortError') setStatus(error.message);
+  }
+}
+
+function shareWhatsApp() {
+  window.open(`https://wa.me/?text=${encodeURIComponent(shareText())}`, '_blank', 'noopener');
+}
+
+function shareEmail() {
+  location.href = `mailto:?subject=${encodeURIComponent('Minkin')}&body=${encodeURIComponent(shareText())}`;
+}
+
+async function copyText() {
+  try {
+    await navigator.clipboard.writeText(shareText());
+    setStatus(t('copied'));
+  } catch (error) {
+    setStatus(t('copyError'));
+  }
+}
+
 function speak(text, lang) {
   if (!('speechSynthesis' in window)) {
     setStatus(t('ttsUnsupported'));
@@ -902,6 +976,11 @@ function toggleMic() {
 el.mic.addEventListener('click', toggleMic);
 el.translateBtn.addEventListener('click', translate);
 el.playBtn.addEventListener('click', () => speak(el.resultTarget.textContent, state.target));
+el.shareNative.addEventListener('click', shareNative);
+el.shareWa.addEventListener('click', shareWhatsApp);
+el.shareMail.addEventListener('click', shareEmail);
+el.shareCopy.addEventListener('click', copyText);
+if (!navigator.share) el.shareNative.hidden = true;
 el.swapBtn.addEventListener('click', swapLanguages);
 el.sourceText.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {

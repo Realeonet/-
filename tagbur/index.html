@@ -121,12 +121,35 @@ const BIBLE = [
    q:'איפה משה קיבל את עשרת הדיברות?', opts:['בהר סיני','בחוף הים','במצרים'], a:'בהר סיני'},
 ];
 
+// מדעים (כיתה ה׳): כל נושא עם הסבר קצר ושאלה אחת
+const SCIENCE = [
+  {title:'מחזור המים', emoji:'💧',
+   text:'השמש מחממת מים מהים ומהנהרות, והם מתאדים ועולים לאוויר. באוויר הם מתקררים ומתעבים לעננים. כשהטיפות גדולות מספיק, הן יורדות כגשם.',
+   q:'מה קורה למים כשהם מתאדים?', opts:['הם עולים לאוויר','הם נעלמים לתמיד','הם הופכים לאבן'], a:'הם עולים לאוויר'},
+  {title:'הלב', emoji:'❤️',
+   text:'הלב הוא שריר שמשאיב דם בגוף. הדם מביא לתאים חמצן וחומרי מזון, ולוקח מהם פחמן דו-חמצני. הלב פועל כל הזמן, גם כשאנחנו ישנים.',
+   q:'מה הלב עושה?', opts:['שואב דם בגוף','מעכל אוכל','נושם אוויר'], a:'שואב דם בגוף'},
+  {title:'פוטוסינתזה', emoji:'🌱',
+   text:'צמחים מכינים לעצמם מזון בעזרת אור השמש. בתהליך הזה הם משתמשים במים ובפחמן דו-חמצני, ומשחררים לאוויר חמצן.',
+   q:'מה הצמח משחרר לאוויר בתהליך הזה?', opts:['חמצן','חנקן','אדים בלבד'], a:'חמצן'},
+  {title:'מעגל חשמלי', emoji:'💡',
+   text:'כדי שנורה תידלק צריך מקור חשמל, חוטים מוליכים ומעגל סגור. אם המעגל נפתח, הזרם נעצר והנורה כבה.',
+   q:'מה צריך כדי שנורה תידלק?', opts:['מעגל סגור','מעגל פתוח','כוס מים'], a:'מעגל סגור'},
+  {title:'מזון ותזונה', emoji:'🥗',
+   text:'כדי לגדול ולהיות בריאים צריך לאכול מזון מגוון. פירות וירקות מספקים ויטמינים ומינרלים, וחלבונים כמו ביצים וקטניות בונים שרירים.',
+   q:'איזה מזון בונה שרירים?', opts:['ביצים וקטניות','ממתקים','מיץ בלבד'], a:'ביצים וקטניות'},
+  {title:'מערכת העיכול', emoji:'🍽️',
+   text:'האוכל נכנס לפה ונטחן, ומשם הוא עובר בוושט אל הקיבה. בסוף המסלול, במעי הדק, חומרי המזון נספגים אל הדם.',
+   q:'איפה חומרי המזון נספגים לדם?', opts:['במעי הדק','בפה','בוושט'], a:'במעי הדק'},
+];
+
 // תוכן לפי מקצוע וכיתה. לכיתה שאין לה עדיין תוכן יוצגת הודעה מתאימה.
 const GRADES = [1,2,3,4,5,6,7,8,9,10,11,12].map(n => ({n, name:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב'][n-1]}));
 const gradeName = n => GRADES[n-1].name;
 const CONTENT = {
   en: {5: {words: WORDS, sentences: SENTENCES}},
   tanakh: {5: {stories: BIBLE}},
+  science: {5: {stories: SCIENCE}},
 };
 
 const BREAKS = [
@@ -306,6 +329,7 @@ function home(){
       h('p', {textContent:badgeText()})),
     big('🇬🇧', 'אנגלית', 'לשמוע, לכתוב ולהשלים משפטים', () => startRound('en')),
     big('📜', 'תנ״ך', 'סיפורים ושאלות', () => startRound('tanakh')),
+    big('🔬', 'מדעים', 'נושאים קצרים ושאלות', () => startRound('science')),
     big('👨‍👩‍👧', 'למבוגרים', 'התקדמות ומילים לחזרה', parents),
     h('button', {className:'btn alt', textContent:`🎓 כיתה ${gradeName(me.grade)} (שינוי)`, onclick:changeGrade}),
     h('button', {className:'btn alt', textContent:'🔄 החלף חשבון', onclick:accountsScreen}),
@@ -343,14 +367,15 @@ function parents(){
 let round = null;
 
 function startRound(subject){
-  const items = subject === 'en' ? englishRound(me.grade) : tanakhRound(me.grade);
+  const build = {en:englishRound, tanakh:tanakhRound, science:scienceRound}[subject];
+  const items = build(me.grade);
   if(!items) return noContent(subject);
   round = {subject, items, i:0, stars:0};
   showItem();
 }
 
 function noContent(subject){
-  const name = subject === 'en' ? 'באנגלית' : 'בתנ״ך';
+  const name = {en:'באנגלית', tanakh:'בתנ״ך', science:'במדעים'}[subject];
   view(
     h('button', {className:'btn alt', textContent:'⬅ חזרה לתפריט', onclick:home}),
     h('div', {className:'card center'},
@@ -609,11 +634,13 @@ function englishRound(grade){
   return shuffle(items);
 }
 
-function tanakhRound(grade){
-  const c = CONTENT.tanakh[grade];
+function storyRound(subject, grade){
+  const c = CONTENT[subject][grade];
   if(!c) return null;
-  return shuffle(c.stories).slice(0, 5).map(b => ({kind:'bible', key:'t:' + b.title, label:b.title, b}));
+  return shuffle(c.stories).slice(0, 5).map(b => ({kind:'bible', key:subject + ':' + b.title, label:b.title, b}));
 }
+const tanakhRound = grade => storyRound('tanakh', grade);
+const scienceRound = grade => storyRound('science', grade);
 
 // ===================================================================
 // התחלה

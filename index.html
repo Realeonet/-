@@ -1,53 +1,919 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Разговорник: испанский</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Разговорник</title>
+<style>
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1d2330;
+  --muted: #6b7280;
+  --accent: #d6336c;
+  --accent-soft: #fde7ef;
+  --border: #e3e6ec;
+  --radius: 14px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) {
+    --bg: #14171f;
+    --card: #1e222c;
+    --text: #e8eaf0;
+    --muted: #9aa1b2;
+    --accent: #ff6b9a;
+    --accent-soft: #3a2230;
+    --border: #2d3340;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme=dark] {
+  --bg: #14171f;
+  --card: #1e222c;
+  --text: #e8eaf0;
+  --muted: #9aa1b2;
+  --accent: #ff6b9a;
+  --accent-soft: #3a2230;
+  --border: #2d3340;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.45;
+}
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-block: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.app-header h1 {
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+.lang-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.lang-group {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.lang-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.swap {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 24px 12px;
+  margin-bottom: 16px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.mic:active {
+  transform: scale(0.98);
+}
+
+.mic:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.mic.is-listening {
+  border-style: solid;
+  border-color: var(--accent);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 51, 108, 0.35); }
+  50% { box-shadow: 0 0 0 12px rgba(214, 51, 108, 0); }
+}
+
+.field-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.05rem;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.result-source {
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.result-target {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+
+.status {
+  min-height: 1.2em;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.phrase-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.phrase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.phrase:first-child {
+  border-top: 0;
+}
+
+.phrase-pick {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.phrase-target {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.icon-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.footer-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 8px 0 24px;
+}
+</style>
 </head>
 <body>
-  <main class="app">
-    <header class="app-header">
-      <h1>Разговорник · испанский</h1>
-      <div class="lang-switch" role="radiogroup" aria-label="Язык исходного текста">
-        <button type="button" class="lang-btn is-active" data-lang="ru" role="radio" aria-checked="true">Русский</button>
-        <button type="button" class="lang-btn" data-lang="he" role="radio" aria-checked="false">עברית</button>
+<main class="app">
+  <header class="app-header">
+    <h1 data-i18n="appTitle">Разговорник</h1>
+    <div class="chips" id="ui-langs" role="radiogroup" data-i18n-aria="uiLang"></div>
+  </header>
+
+  <section class="card">
+    <div class="lang-row">
+      <div class="lang-group">
+        <span class="lang-label" data-i18n="inputLabel">Язык ввода</span>
+        <div class="chips" id="input-langs" role="radiogroup" data-i18n-aria="inputLabel"></div>
       </div>
-    </header>
-
-    <section class="card translator">
-      <button type="button" id="mic" class="mic" aria-label="Говорить">
-        <span class="mic-icon" aria-hidden="true">🎙</span>
-        <span id="mic-label">Нажмите и говорите</span>
-      </button>
-
-      <label class="field-label" for="source-text">Ваш текст</label>
-      <textarea id="source-text" rows="3" placeholder="Скажите или напишите фразу"></textarea>
-      <button type="button" id="translate-btn" class="btn btn-secondary">Перевести</button>
-
-      <div id="result" class="result" hidden>
-        <p class="result-source" id="result-source" dir="auto"></p>
-        <p class="result-es" id="result-es" lang="es"></p>
-        <button type="button" id="play-btn" class="btn btn-primary">▶ Воспроизвести по-испански</button>
+      <button type="button" id="swap-btn" class="swap" data-i18n="swap">⇄ Поменять местами</button>
+      <div class="lang-group">
+        <span class="lang-label" data-i18n="outputLabel">Язык перевода</span>
+        <div class="chips" id="output-langs" role="radiogroup" data-i18n-aria="outputLabel"></div>
       </div>
+    </div>
+  </section>
 
-      <p id="status" class="status" role="status" aria-live="polite"></p>
-    </section>
+  <section class="card">
+    <button type="button" id="mic" class="mic">
+      <span class="mic-icon" aria-hidden="true">🎙</span>
+      <span id="mic-label"></span>
+    </button>
 
-    <section class="card">
-      <h2>Разговорник</h2>
-      <div class="filters" id="filters"></div>
-      <ul class="phrase-list" id="phrase-list"></ul>
-    </section>
+    <label class="field-label" for="source-text" data-i18n="textLabel">Ваш текст</label>
+    <textarea id="source-text" rows="3" data-i18n-placeholder="textPlaceholder"></textarea>
+    <button type="button" id="translate-btn" class="btn btn-secondary" data-i18n="translate">Перевести</button>
 
-    <p class="footer-note">
-      Для записи нужен микрофон и разрешение браузера. Распознавание речи работает в Chrome и Edge,
-      перевод требует интернета. Фразы из разговорника переводятся офлайн.
-    </p>
-  </main>
+    <div id="result" class="result" hidden>
+      <p class="result-source" id="result-source" dir="auto"></p>
+      <p class="result-target" id="result-target"></p>
+      <button type="button" id="play-btn" class="btn btn-primary" data-i18n="play">▶ Воспроизвести</button>
+    </div>
 
-  <script src="phrases.js"></script>
-  <script src="app.js"></script>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card">
+    <h2 data-i18n="phrasebook">Разговорник</h2>
+    <div class="filters chips" id="filters"></div>
+    <ul class="phrase-list" id="phrase-list"></ul>
+  </section>
+
+  <p class="footer-note" data-i18n="footer"></p>
+</main>
+
+<script>
+const LANGS = {
+  ru: { name: 'Русский', flag: '🇷🇺', speech: 'ru-RU', api: 'ru', dir: 'ltr' },
+  es: { name: 'Español', flag: '🇪🇸', speech: 'es-ES', api: 'es', dir: 'ltr' },
+  he: { name: 'עברית', flag: '🇮🇱', speech: 'he-IL', api: 'he', dir: 'rtl' },
+};
+const CODES = Object.keys(LANGS);
+const CATEGORIES = ['greet', 'basic', 'food', 'transport', 'shop', 'help'];
+const TRANSLATE_URL = 'https://api.mymemory.translated.net/get';
+const MIC_ERRORS = {
+  'not-allowed': 'micNotAllowed',
+  'no-speech': 'noSpeech',
+  'audio-capture': 'micNotFound',
+  network: 'networkError',
+};
+
+const UI = {
+  ru: {
+    appTitle: 'Разговорник',
+    uiLang: 'Язык интерфейса',
+    inputLabel: 'Язык ввода',
+    outputLabel: 'Язык перевода',
+    swap: '⇄ Поменять местами',
+    micIdle: 'Нажмите и говорите',
+    micListening: 'Слушаю… нажмите, чтобы остановить',
+    micUnsupported: 'Микрофон недоступен в этом браузере',
+    textLabel: 'Ваш текст',
+    textPlaceholder: 'Скажите или напишите фразу',
+    translate: 'Перевести',
+    play: '▶ Воспроизвести',
+    phrasebook: 'Разговорник',
+    all: 'Все',
+    enterText: 'Сначала скажите или напишите фразу.',
+    translating: 'Перевожу…',
+    translateError: 'Не удалось перевести',
+    checkInternet: 'Проверьте интернет или попробуйте фразу из разговорника.',
+    noSpeech: 'Речь не распознана. Попробуйте ещё раз.',
+    micNotAllowed: 'Нет доступа к микрофону. Разрешите его в настройках браузера.',
+    micNotFound: 'Микрофон не найден.',
+    networkError: 'Ошибка сети при распознавании речи.',
+    speechUnsupported: 'Распознавание речи не поддерживается этим браузером. Введите текст вручную.',
+    ttsUnsupported: 'Озвучка не поддерживается этим браузером.',
+    footer: 'Для записи нужен микрофон и разрешение браузера. Распознавание речи работает в Chrome и Edge, перевод требует интернета. Фразы из разговорника переводятся офлайн.',
+    showTranslation: 'Показать перевод',
+    playAria: 'Воспроизвести',
+    categories: { greet: 'Приветствия', basic: 'Базовое', food: 'Ресторан', transport: 'Транспорт', shop: 'Покупки', help: 'Помощь' },
+  },
+  es: {
+    appTitle: 'Guía de conversación',
+    uiLang: 'Idioma de la aplicación',
+    inputLabel: 'Idioma de entrada',
+    outputLabel: 'Idioma de traducción',
+    swap: '⇄ Intercambiar',
+    micIdle: 'Pulse y hable',
+    micListening: 'Escuchando… pulse para parar',
+    micUnsupported: 'El micrófono no está disponible en este navegador',
+    textLabel: 'Su texto',
+    textPlaceholder: 'Hable o escriba una frase',
+    translate: 'Traducir',
+    play: '▶ Reproducir',
+    phrasebook: 'Guía de frases',
+    all: 'Todas',
+    enterText: 'Primero diga o escriba una frase.',
+    translating: 'Traduciendo…',
+    translateError: 'No se pudo traducir',
+    checkInternet: 'Compruebe la conexión o pruebe una frase de la guía.',
+    noSpeech: 'No se reconoció la voz. Inténtelo de nuevo.',
+    micNotAllowed: 'No hay acceso al micrófono. Permítalo en la configuración del navegador.',
+    micNotFound: 'No se encontró ningún micrófono.',
+    networkError: 'Error de red al reconocer la voz.',
+    speechUnsupported: 'Este navegador no admite el reconocimiento de voz. Escriba el texto a mano.',
+    ttsUnsupported: 'Este navegador no admite la reproducción de voz.',
+    footer: 'Para grabar se necesitan el micrófono y su permiso. El reconocimiento de voz funciona en Chrome y Edge; la traducción necesita internet. Las frases de la guía se traducen sin conexión.',
+    showTranslation: 'Ver traducción',
+    playAria: 'Reproducir',
+    categories: { greet: 'Saludos', basic: 'Básico', food: 'Restaurante', transport: 'Transporte', shop: 'Compras', help: 'Ayuda' },
+  },
+  he: {
+    appTitle: 'שיחון',
+    uiLang: 'שפת הממשק',
+    inputLabel: 'שפת קלט',
+    outputLabel: 'שפת תרגום',
+    swap: '⇄ החלף',
+    micIdle: 'לחצו ודברו',
+    micListening: 'מקשיב… לחצו כדי לעצור',
+    micUnsupported: 'המיקרופון אינו זמין בדפדפן הזה',
+    textLabel: 'הטקסט שלכם',
+    textPlaceholder: 'דברו או הקלידו משפט',
+    translate: 'תרגם',
+    play: '▶ השמע',
+    phrasebook: 'שיחון',
+    all: 'הכול',
+    enterText: 'קודם דברו או הקלידו משפט.',
+    translating: 'מתרגם…',
+    translateError: 'התרגום נכשל',
+    checkInternet: 'בדקו את החיבור לאינטרנט או נסו משפט מהשיחון.',
+    noSpeech: 'הדיבור לא זוהה. נסו שוב.',
+    micNotAllowed: 'אין גישה למיקרופון. אשרו אותה בהגדרות הדפדפן.',
+    micNotFound: 'לא נמצא מיקרופון.',
+    networkError: 'שגיאת רשת בזיהוי הדיבור.',
+    speechUnsupported: 'הדפדפן הזה לא תומך בזיהוי דיבור. הקלידו את הטקסט.',
+    ttsUnsupported: 'הדפדפן הזה לא תומך בהשמעה קולית.',
+    footer: 'להקלטה צריך מיקרופון ואישור הדפדפן. זיהוי הדיבור עובד ב-Chrome וב-Edge; התרגום דורש אינטרנט. משפטי השיחון מתורגמים גם בלי אינטרנט.',
+    showTranslation: 'הצג תרגום',
+    playAria: 'השמע',
+    categories: { greet: 'ברכות', basic: 'בסיסי', food: 'מסעדה', transport: 'תחבורה', shop: 'קניות', help: 'עזרה' },
+  },
+};
+
+// Фразы разговорника. category — id раздела, ru / es / he — текст на каждом языке.
+const PHRASES = [
+  { category: 'greet', ru: 'Привет', he: 'שלום', es: 'Hola' },
+  { category: 'greet', ru: 'Доброе утро', he: 'בוקר טוב', es: 'Buenos días' },
+  { category: 'greet', ru: 'Добрый вечер', he: 'ערב טוב', es: 'Buenas tardes' },
+  { category: 'greet', ru: 'Спокойной ночи', he: 'לילה טוב', es: 'Buenas noches' },
+  { category: 'greet', ru: 'До свидания', he: 'להתראות', es: 'Adiós' },
+  { category: 'greet', ru: 'Хорошего дня', he: 'יום טוב', es: 'Que tenga un buen día' },
+
+  { category: 'basic', ru: 'Да', he: 'כן', es: 'Sí' },
+  { category: 'basic', ru: 'Нет', he: 'לא', es: 'No' },
+  { category: 'basic', ru: 'Спасибо', he: 'תודה', es: 'Gracias' },
+  { category: 'basic', ru: 'Пожалуйста', he: 'בבקשה', es: 'Por favor' },
+  { category: 'basic', ru: 'Извините', he: 'סליחה', es: 'Perdón' },
+  { category: 'basic', ru: 'Я не понимаю', he: 'אני לא מבין', es: 'No entiendo' },
+  { category: 'basic', ru: 'Говорите медленнее', he: 'תדבר לאט', es: 'Hable más despacio' },
+  { category: 'basic', ru: 'Я говорю немного по-испански', he: 'אני מדבר קצת ספרדית', es: 'Hablo un poco de español' },
+  { category: 'basic', ru: 'Как вас зовут?', he: 'איך קוראים לך?', es: '¿Cómo se llama?' },
+  { category: 'basic', ru: 'Меня зовут…', he: 'קוראים לי…', es: 'Me llamo…' },
+  { category: 'basic', ru: 'Сколько времени?', he: 'מה השעה?', es: '¿Qué hora es?' },
+
+  { category: 'food', ru: 'Меню, пожалуйста', he: 'תפריט, בבקשה', es: 'La carta, por favor' },
+  { category: 'food', ru: 'Вода, пожалуйста', he: 'מים, בבקשה', es: 'Agua, por favor' },
+  { category: 'food', ru: 'Счёт, пожалуйста', he: 'החשבון, בבקשה', es: 'La cuenta, por favor' },
+  { category: 'food', ru: 'Сколько это стоит?', he: 'כמה זה עולה?', es: '¿Cuánto cuesta?' },
+  { category: 'food', ru: 'Очень вкусно!', he: 'טעים מאוד!', es: '¡Qué rico!' },
+  { category: 'food', ru: 'Где туалет?', he: 'איפה השירותים?', es: '¿Dónde está el baño?' },
+
+  { category: 'transport', ru: 'Один билет, пожалуйста', he: 'כרטיס אחד, בבקשה', es: 'Un billete, por favor' },
+  { category: 'transport', ru: 'Где остановка автобуса?', he: 'איפה התחנה של האוטובוס?', es: '¿Dónde está la parada de autobús?' },
+  { category: 'transport', ru: 'Где здесь метро?', he: 'איפה הרכבת התחתית?', es: '¿Dónde está el metro?' },
+  { category: 'transport', ru: 'Отвезите меня сюда, пожалуйста', he: 'תיקח אותי לכאן, בבקשה', es: 'Llévame aquí, por favor' },
+
+  { category: 'shop', ru: 'Можно посмотреть?', he: 'אפשר לראות?', es: '¿Puedo verlo?' },
+  { category: 'shop', ru: 'Это слишком дорого', he: 'זה יקר מדי', es: 'Es demasiado caro' },
+  { category: 'shop', ru: 'Можно оплатить картой?', he: 'אפשר לשלם בכרטיס?', es: '¿Puedo pagar con tarjeta?' },
+
+  { category: 'help', ru: 'Помогите!', he: 'עזרה!', es: '¡Socorro!' },
+  { category: 'help', ru: 'Мне нужна помощь', he: 'אני צריך עזרה', es: 'Necesito ayuda' },
+  { category: 'help', ru: 'Вызовите врача', he: 'תקראו לרופא', es: 'Llame a un médico' },
+  { category: 'help', ru: 'Где ближайшая аптека?', he: 'איפה בית המרקחת הכי קרוב?', es: '¿Dónde está la farmacia más cercana?' },
+  { category: 'help', ru: 'Я потерялся', he: 'אני אבוד', es: 'Me he perdido' },
+];
+
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+const state = {
+  ui: 'ru',
+  source: 'ru',
+  target: 'es',
+  recognizer: null,
+  filter: 'all',
+};
+
+const el = {
+  uiLangs: document.getElementById('ui-langs'),
+  inputLangs: document.getElementById('input-langs'),
+  outputLangs: document.getElementById('output-langs'),
+  swapBtn: document.getElementById('swap-btn'),
+  mic: document.getElementById('mic'),
+  micLabel: document.getElementById('mic-label'),
+  sourceText: document.getElementById('source-text'),
+  translateBtn: document.getElementById('translate-btn'),
+  result: document.getElementById('result'),
+  resultSource: document.getElementById('result-source'),
+  resultTarget: document.getElementById('result-target'),
+  playBtn: document.getElementById('play-btn'),
+  status: document.getElementById('status'),
+  filters: document.getElementById('filters'),
+  phraseList: document.getElementById('phrase-list'),
+};
+
+function t(key) {
+  const dict = UI[state.ui] || UI.ru;
+  return dict[key] !== undefined ? dict[key] : UI.ru[key];
+}
+
+function loadPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('phrasebook-prefs') || '{}');
+    if (UI[saved.ui]) state.ui = saved.ui;
+    if (LANGS[saved.source]) state.source = saved.source;
+    if (LANGS[saved.target]) state.target = saved.target;
+  } catch (error) {
+    console.warn(error);
+  }
+  if (state.source === state.target) {
+    state.target = CODES.find((code) => code !== state.source);
+  }
+}
+
+function savePrefs() {
+  try {
+    localStorage.setItem('phrasebook-prefs', JSON.stringify({
+      ui: state.ui,
+      source: state.source,
+      target: state.target,
+    }));
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+function setStatus(message) {
+  el.status.textContent = message;
+}
+
+function chipButton(code, active, onClick) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'chip' + (active ? ' is-active' : '');
+  btn.setAttribute('role', 'radio');
+  btn.setAttribute('aria-checked', String(active));
+  btn.textContent = `${LANGS[code].flag} ${LANGS[code].name}`;
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
+function renderUiLangs() {
+  el.uiLangs.innerHTML = '';
+  CODES.forEach((code) => {
+    el.uiLangs.appendChild(chipButton(code, state.ui === code, () => {
+      state.ui = code;
+      savePrefs();
+      applyUI();
+    }));
+  });
+}
+
+function renderLangChips() {
+  el.inputLangs.innerHTML = '';
+  el.outputLangs.innerHTML = '';
+  CODES.forEach((code) => {
+    el.inputLangs.appendChild(chipButton(code, state.source === code, () => setSource(code)));
+    el.outputLangs.appendChild(chipButton(code, state.target === code, () => setTarget(code)));
+  });
+}
+
+function categoryName(id) {
+  return id === 'all' ? t('all') : UI[state.ui].categories[id];
+}
+
+function renderFilters() {
+  el.filters.innerHTML = '';
+  ['all', ...CATEGORIES].forEach((id) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip' + (state.filter === id ? ' is-active' : '');
+    btn.textContent = categoryName(id);
+    btn.addEventListener('click', () => {
+      state.filter = id;
+      renderFilters();
+      renderPhrases();
+    });
+    el.filters.appendChild(btn);
+  });
+}
+
+function renderPhrases() {
+  const visible = PHRASES.filter((p) => state.filter === 'all' || p.category === state.filter);
+  el.phraseList.innerHTML = '';
+
+  visible.forEach((phrase) => {
+    const item = document.createElement('li');
+    item.className = 'phrase';
+
+    const pick = document.createElement('button');
+    pick.type = 'button';
+    pick.className = 'phrase-pick';
+    pick.setAttribute('aria-label', `${t('showTranslation')}: ${phrase[state.source]}`);
+
+    const source = document.createElement('span');
+    source.lang = state.source;
+    source.dir = LANGS[state.source].dir;
+    source.textContent = phrase[state.source];
+
+    const target = document.createElement('span');
+    target.className = 'phrase-target';
+    target.lang = state.target;
+    target.dir = LANGS[state.target].dir;
+    target.textContent = phrase[state.target];
+
+    pick.append(source, target);
+    pick.addEventListener('click', () => {
+      el.sourceText.value = phrase[state.source];
+      showResult(phrase[state.source], phrase[state.target]);
+    });
+
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'icon-btn';
+    play.setAttribute('aria-label', `${t('playAria')}: ${phrase[state.target]}`);
+    play.textContent = '▶';
+    play.addEventListener('click', () => speak(phrase[state.target], state.target));
+
+    item.append(pick, play);
+    el.phraseList.appendChild(item);
+  });
+}
+
+function updateMicLabel() {
+  if (!SpeechRecognitionAPI) {
+    el.micLabel.textContent = t('micUnsupported');
+  } else {
+    el.micLabel.textContent = state.recognizer ? t('micListening') : t('micIdle');
+  }
+  el.mic.classList.toggle('is-listening', Boolean(state.recognizer));
+  el.mic.disabled = !SpeechRecognitionAPI;
+}
+
+function applyUI() {
+  document.documentElement.lang = state.ui;
+  document.documentElement.dir = LANGS[state.ui] && state.ui === 'he' ? 'rtl' : 'ltr';
+  document.title = t('appTitle');
+  document.querySelectorAll('[data-i18n]').forEach((node) => {
+    node.textContent = t(node.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+    node.placeholder = t(node.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach((node) => {
+    node.setAttribute('aria-label', t(node.dataset.i18nAria));
+  });
+  renderUiLangs();
+  renderLangChips();
+  renderFilters();
+  renderPhrases();
+  updateMicLabel();
+}
+
+// Меняет языки. Если сменился язык ввода, старый текст очищается.
+function setLanguages(source, target) {
+  if (source === target) return;
+  const sourceChanged = source !== state.source;
+  stopMic();
+  state.source = source;
+  state.target = target;
+  if (sourceChanged) el.sourceText.value = '';
+  el.sourceText.lang = source;
+  el.sourceText.dir = LANGS[source].dir;
+  el.result.hidden = true;
+  setStatus('');
+  savePrefs();
+  renderLangChips();
+  renderPhrases();
+}
+
+function setSource(code) {
+  if (code === state.target) {
+    setLanguages(code, state.source);
+  } else {
+    setLanguages(code, state.target);
+  }
+}
+
+function setTarget(code) {
+  if (code === state.source) {
+    setLanguages(state.target, code);
+  } else {
+    setLanguages(state.source, code);
+  }
+}
+
+function swapLanguages() {
+  const translated = el.result.hidden ? '' : el.resultTarget.textContent;
+  setLanguages(state.target, state.source);
+  if (translated) el.sourceText.value = translated;
+}
+
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .replace(/[.,!?¿¡;:'«»—…-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findPhrase(text) {
+  const query = normalize(text);
+  if (!query) return null;
+  return PHRASES.find((phrase) => normalize(phrase[state.source]) === query) || null;
+}
+
+function showResult(sourceText, targetText) {
+  el.resultSource.textContent = sourceText;
+  el.resultSource.lang = state.source;
+  el.resultSource.dir = LANGS[state.source].dir;
+  el.resultTarget.textContent = targetText;
+  el.resultTarget.lang = state.target;
+  el.resultTarget.dir = LANGS[state.target].dir;
+  el.result.hidden = false;
+  setStatus('');
+}
+
+function speak(text, lang) {
+  if (!('speechSynthesis' in window)) {
+    setStatus(t('ttsUnsupported'));
+    return;
+  }
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = LANGS[lang].speech;
+  const voice = speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith(LANGS[lang].api));
+  if (voice) utterance.voice = voice;
+  utterance.rate = 0.9;
+  speechSynthesis.speak(utterance);
+}
+
+async function translate() {
+  const text = el.sourceText.value.trim();
+  if (!text) {
+    setStatus(t('enterText'));
+    return;
+  }
+
+  const phrase = findPhrase(text);
+  if (phrase) {
+    el.sourceText.value = phrase[state.source];
+    showResult(phrase[state.source], phrase[state.target]);
+    return;
+  }
+
+  setStatus(t('translating'));
+  el.translateBtn.disabled = true;
+  try {
+    const params = new URLSearchParams({
+      q: text,
+      langpair: `${LANGS[state.source].api}|${LANGS[state.target].api}`,
+    });
+    const response = await fetch(`${TRANSLATE_URL}?${params}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (data.responseStatus && data.responseStatus !== 200) {
+      throw new Error(data.responseDetails || `статус ${data.responseStatus}`);
+    }
+    const translated = data.responseData && data.responseData.translatedText;
+    if (!translated) throw new Error('пустой ответ');
+    showResult(text, translated);
+  } catch (error) {
+    console.error(error);
+    el.result.hidden = true;
+    setStatus(`${t('translateError')} (${error.message}). ${t('checkInternet')}`);
+  } finally {
+    el.translateBtn.disabled = false;
+  }
+}
+
+function startListening() {
+  if (!SpeechRecognitionAPI) {
+    setStatus(t('speechUnsupported'));
+    return;
+  }
+
+  const recognizer = new SpeechRecognitionAPI();
+  recognizer.lang = LANGS[state.source].speech;
+  recognizer.interimResults = true;
+  recognizer.continuous = false;
+  recognizer.maxAlternatives = 1;
+
+  let finalText = '';
+
+  recognizer.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      if (result.isFinal) {
+        finalText += result[0].transcript;
+      } else {
+        interim += result[0].transcript;
+      }
+    }
+    el.sourceText.value = (finalText + interim).trim();
+  };
+
+  recognizer.onerror = (event) => {
+    if (event.error === 'aborted') return;
+    const key = MIC_ERRORS[event.error];
+    setStatus(key ? t(key) : event.error);
+  };
+
+  recognizer.onend = () => {
+    if (state.recognizer !== recognizer) return;
+    state.recognizer = null;
+    updateMicLabel();
+    if (el.sourceText.value.trim()) translate();
+  };
+
+  try {
+    state.recognizer = recognizer;
+    setStatus('');
+    recognizer.start();
+  } catch (error) {
+    state.recognizer = null;
+    setStatus(error.message);
+  }
+  updateMicLabel();
+}
+
+// Остановка без перевода: используется при смене языка.
+function stopMic() {
+  const recognizer = state.recognizer;
+  if (!recognizer) return;
+  state.recognizer = null;
+  recognizer.abort();
+  updateMicLabel();
+}
+
+function toggleMic() {
+  if (state.recognizer) {
+    state.recognizer.stop();
+  } else {
+    startListening();
+  }
+}
+
+el.mic.addEventListener('click', toggleMic);
+el.translateBtn.addEventListener('click', translate);
+el.playBtn.addEventListener('click', () => speak(el.resultTarget.textContent, state.target));
+el.swapBtn.addEventListener('click', swapLanguages);
+el.sourceText.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    translate();
+  }
+});
+
+loadPrefs();
+el.sourceText.lang = state.source;
+el.sourceText.dir = LANGS[state.source].dir;
+applyUI();
+</script>
 </body>
 </html>

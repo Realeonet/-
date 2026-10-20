@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Разговорник: испанский</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <h1>Разговорник · испанский</h1>
+      <div class="lang-switch" role="radiogroup" aria-label="Язык исходного текста">
+        <button type="button" class="lang-btn is-active" data-lang="ru" role="radio" aria-checked="true">Русский</button>
+        <button type="button" class="lang-btn" data-lang="he" role="radio" aria-checked="false">עברית</button>
+      </div>
+    </header>
+
+    <section class="card translator">
+      <button type="button" id="mic" class="mic" aria-label="Говорить">
+        <span class="mic-icon" aria-hidden="true">🎙</span>
+        <span id="mic-label">Нажмите и говорите</span>
+      </button>
+
+      <label class="field-label" for="source-text">Ваш текст</label>
+      <textarea id="source-text" rows="3" placeholder="Скажите или напишите фразу"></textarea>
+      <button type="button" id="translate-btn" class="btn btn-secondary">Перевести</button>
+
+      <div id="result" class="result" hidden>
+        <p class="result-source" id="result-source" dir="auto"></p>
+        <p class="result-es" id="result-es" lang="es"></p>
+        <button type="button" id="play-btn" class="btn btn-primary">▶ Воспроизвести по-испански</button>
+      </div>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card">
+      <h2>Разговорник</h2>
+      <div class="filters" id="filters"></div>
+      <ul class="phrase-list" id="phrase-list"></ul>
+    </section>
+
+    <p class="footer-note">
+      Для записи нужен микрофон и разрешение браузера. Распознавание речи работает в Chrome и Edge,
+      перевод требует интернета. Фразы из разговорника переводятся офлайн.
+    </p>
+  </main>
+
+  <script src="phrases.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

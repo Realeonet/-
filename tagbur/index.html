@@ -143,6 +143,47 @@ const SCIENCE = [
    q:'איפה חומרי המזון נספגים לדם?', opts:['במעי הדק','בפה','בוושט'], a:'במעי הדק'},
 ];
 
+// מתמטיקה (כיתה ה׳): כל נושא עם הסבר קצר ושאלה אחת
+const MATH = [
+  {title:'כפל', emoji:'✖️',
+   text:'כדי לכפול, מחברים שוב ושוב את אותו מספר. למשל: 4 × 3 זה 4 + 4 + 4.',
+   q:'כמה זה 12 × 4?', opts:['48','44','52'], a:'48'},
+  {title:'שברים', emoji:'🍕',
+   text:'שבר מורכב ממונה ומכנה. המכנה מראה לכמה חלקים שווים חולקים את השלם, והמונה מראה כמה חלקים לוקחים.',
+   q:'בפיצה חולקו 8 חתיכות שוות, ולקחתי 3. איזה שבר מתאים?', opts:['3/8','8/3','5/8'], a:'3/8'},
+  {title:'שטח מלבן', emoji:'📐',
+   text:'שטח מלבן מחשבים בכפל האורך ברוחב. היחידה היא סנטימטר רבוע.',
+   q:'מלבן באורך 6 ס״מ וברוחב 4 ס״מ. מה השטח שלו?', opts:['24 ס״מ רבוע','20 ס״מ רבוע','10 ס״מ רבוע'], a:'24 ס״מ רבוע'},
+  {title:'חילוק', emoji:'🍪',
+   text:'חילוק הוא חלוקה לחלקים שווים. אפשר לבדוק בעזרת כפל: אם 5 × 7 = 35, אז 35 ÷ 5 = 7.',
+   q:'כמה זה 45 ÷ 9?', opts:['5','6','9'], a:'5'},
+  {title:'אחוזים', emoji:'💯',
+   text:'אחוז הוא חלק מתוך 100. 50% פירושו חצי.',
+   q:'כמה זה 50% מ-80?', opts:['40','50','30'], a:'40'},
+  {title:'מספרים עשרוניים', emoji:'🔢',
+   text:'במספר עשרוני, הספרה שאחרי הנקודה מייצגת עשיריות. למשל 2.5 הוא שני שלמים וחצי.',
+   q:'איזה מספר שווה ל-2.5?', opts:['2 וחצי','25','2 ועשירית'], a:'2 וחצי'},
+];
+
+// עברית (כיתה ה׳): דקדוק ואוצר מילים
+const HEBREW = [
+  {title:'שם עצם ושם תואר', emoji:'📝',
+   text:'שם עצם הוא שם של דבר, כמו ילד או בית. שם תואר מתאר אותו, כמו גדול או יפה.',
+   q:'איזו מילה היא שם תואר?', opts:['גדול','ילד','בית'], a:'גדול'},
+  {title:'סימני פיסוק', emoji:'❓',
+   text:'סימן שאלה מסמן שאלה. נקודה מסיימת משפט, ופסיק מפריד בין חלקים במשפט.',
+   q:'באיזה סימן מסיימים משפט שאלה?', opts:['סימן שאלה','נקודה','פסיק'], a:'סימן שאלה'},
+  {title:'זמנים של פועל', emoji:'🏃',
+   text:'הפועל משתנה לפי הזמן: עבר, הווה ועתיד. "אני הולך" בהווה, "אתמול הלכתי" בעבר.',
+   q:'איזה משפט כתוב בזמן עבר?', opts:['אתמול הלכתי לגן','אני הולך לגן','מחר אלך לגן'], a:'אתמול הלכתי לגן'},
+  {title:'מילים נרדפות', emoji:'🔁',
+   text:'מילים נרדפות הן מילים שונות שמשמעותן דומה, כמו "יפה" ו"נאה".',
+   q:'איזו מילה נרדפת ל"שמח"?', opts:['עליז','עצוב','כועס'], a:'עליז'},
+  {title:'רבים ויחיד', emoji:'🐦',
+   text:'ברבים מוסיפים סיומת. למשל: ציפור ← ציפורים, ספר ← ספרים.',
+   q:'מה הרבים של "כלב"?', opts:['כלבים','כלבות','כלבי'], a:'כלבים'},
+];
+
 // תוכן לפי מקצוע וכיתה. לכיתה שאין לה עדיין תוכן יוצגת הודעה מתאימה.
 const GRADES = [1,2,3,4,5,6,7,8,9,10,11,12].map(n => ({n, name:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב'][n-1]}));
 const gradeName = n => GRADES[n-1].name;
@@ -150,6 +191,8 @@ const CONTENT = {
   en: {5: {words: WORDS, sentences: SENTENCES}},
   tanakh: {5: {stories: BIBLE}},
   science: {5: {stories: SCIENCE}},
+  math: {5: {stories: MATH}},
+  hebrew: {5: {stories: HEBREW}},
 };
 
 const BREAKS = [
@@ -330,6 +373,8 @@ function home(){
     big('🇬🇧', 'אנגלית', 'לשמוע, לכתוב ולהשלים משפטים', () => startRound('en')),
     big('📜', 'תנ״ך', 'סיפורים ושאלות', () => startRound('tanakh')),
     big('🔬', 'מדעים', 'נושאים קצרים ושאלות', () => startRound('science')),
+    big('➗', 'מתמטיקה', 'כפל, שברים, שטחים ועוד', () => startRound('math')),
+    big('✍️', 'עברית', 'דקדוק, פיסוק ואוצר מילים', () => startRound('hebrew')),
     big('👨‍👩‍👧', 'למבוגרים', 'התקדמות ומילים לחזרה', parents),
     h('button', {className:'btn alt', textContent:`🎓 כיתה ${gradeName(me.grade)} (שינוי)`, onclick:changeGrade}),
     h('button', {className:'btn alt', textContent:'🔄 החלף חשבון', onclick:accountsScreen}),
@@ -367,7 +412,7 @@ function parents(){
 let round = null;
 
 function startRound(subject){
-  const build = {en:englishRound, tanakh:tanakhRound, science:scienceRound}[subject];
+  const build = {en:englishRound, tanakh:tanakhRound, science:scienceRound, math:mathRound, hebrew:hebrewRound}[subject];
   const items = build(me.grade);
   if(!items) return noContent(subject);
   round = {subject, items, i:0, stars:0};
@@ -375,7 +420,7 @@ function startRound(subject){
 }
 
 function noContent(subject){
-  const name = {en:'באנגלית', tanakh:'בתנ״ך', science:'במדעים'}[subject];
+  const name = {en:'באנגלית', tanakh:'בתנ״ך', science:'במדעים', math:'במתמטיקה', hebrew:'בעברית'}[subject];
   view(
     h('button', {className:'btn alt', textContent:'⬅ חזרה לתפריט', onclick:home}),
     h('div', {className:'card center'},
@@ -641,6 +686,8 @@ function storyRound(subject, grade){
 }
 const tanakhRound = grade => storyRound('tanakh', grade);
 const scienceRound = grade => storyRound('science', grade);
+const mathRound = grade => storyRound('math', grade);
+const hebrewRound = grade => storyRound('hebrew', grade);
 
 // ===================================================================
 // התחלה

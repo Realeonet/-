@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Фотопересчёт товара</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column of work cards, sticky tab strip, big count readout like a stock label */
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --sunken: #e3e8ed; --ink: #14202b; --muted: #556270;
+  --line: #cfd7df; --accent: #0b5cad; --accent-ink: #ffffff; --tape: #ffd400;
+  --ok: #15803d; --warn: #a85a06; --bad: #b42318;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --surface: #161f28; --sunken: #1d2833; --ink: #e5ecf2; --muted: #95a3b1;
+  --line: #2b3946; --accent: #5ea6f0; --accent-ink: #08131e; --tape: #ffd84d;
+  --ok: #4ade80; --warn: #f2a54a; --bad: #f87171; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --surface: #161f28; --sunken: #1d2833; --ink: #e5ecf2; --muted: #95a3b1;
+  --line: #2b3946; --accent: #5ea6f0; --accent-ink: #08131e; --tape: #ffd84d;
+  --ok: #4ade80; --warn: #f2a54a; --bad: #f87171; color-scheme: dark }
+
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+html, body { margin: 0 }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 16px }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15 }
+h1 { font-size: 26px; font-weight: 700 }
+h2 { font-size: 19px; font-weight: 700 }
+h3 { font-size: 15px; font-weight: 700 }
+p { margin: 0 }
+.muted { color: var(--muted) }
+.small { font-size: 13px }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+.eyebrow { font: 600 11px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding-top: 18px }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 12px; color: var(--muted) }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block }
+.pill.ok i { background: var(--ok) } .pill.bad i { background: var(--bad) } .pill.wait i { background: var(--warn) }
+
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px }
+nav.tabs button { font: 600 13px/1.2 var(--f-body); padding: 10px 4px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer }
+nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0 }
+.step { display: flex; gap: 10px; align-items: baseline }
+.step b { font: 700 13px/1 var(--f-mono); background: var(--tape); color: #14202b; padding: 4px 6px; border-radius: 4px }
+
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0 }
+input, select, textarea { font: 15px/1.3 var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; width: 100%; min-width: 0 }
+textarea { resize: vertical; min-height: 60px }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px }
+@media (max-width: 460px) { .grid2, .grid3 { grid-template-columns: 1fr 1fr } }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chips button { font: 500 13px/1 var(--f-body); padding: 9px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 600 14px/1 var(--f-body); padding: 12px 14px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; position: relative; text-align: center }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-size: 16px; padding: 15px }
+.btn:disabled { opacity: .5; cursor: default }
+.btn input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; padding: 0 }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.row > .grow { flex: 1 1 auto }
+
+.slot { border: 1px dashed var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 8px }
+.slot header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px }
+.thumbs:empty { display: none }
+.thumb { position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 6px; overflow: hidden; background: var(--sunken) }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block }
+.thumb button { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 14px; line-height: 24px; cursor: pointer; padding: 0 }
+
+/* Result readout */
+.readout { display: grid; gap: 4px; padding: 16px; border-radius: 8px; background: var(--sunken) }
+.big { font: 700 56px/1 var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: -.01em }
+.big small { font-size: 22px; font-weight: 600; color: var(--muted) }
+.pm { font: 600 20px/1.2 var(--f-mono); }
+.tag { display: inline-block; font: 600 12px/1 var(--f-body); padding: 5px 8px; border-radius: 4px; border: 1px solid currentColor }
+.tag.hi { color: var(--ok) } .tag.mid { color: var(--warn) } .tag.lo { color: var(--bad) } .tag.ex { color: var(--muted) }
+table { width: 100%; border-collapse: collapse; font-size: 13px }
+th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-weight: 600; color: var(--muted); font-size: 12px }
+td.r, th.r { text-align: right }
+.scroll { overflow-x: auto }
+ul.tips { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+.errbar { display: grid; gap: 6px }
+.errbar div { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 13px }
+
+.passes { display: grid; gap: 6px }
+.pass { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 14px; padding: 8px 10px; border-radius: 6px; background: var(--bg) }
+.pass .st { font-family: var(--f-mono); font-size: 13px; color: var(--muted) }
+.pass.done .st { color: var(--ok) } .pass.fail .st { color: var(--bad) }
+@keyframes blink { 50% { opacity: .35 } }
+.pass.run .st { animation: blink 1.2s infinite; color: var(--accent) }
+@media (prefers-reduced-motion: reduce) { .pass.run .st { animation: none } }
+
+.note { font-size: 13px; padding: 10px 12px; border-radius: 8px; background: var(--sunken); color: var(--ink) }
+.note.warn { border-left: 3px solid var(--warn) }
+details summary { cursor: pointer; font-weight: 600; font-size: 14px }
+details[open] summary { margin-bottom: 10px }
+
+/* Manual marking */
+.stage { overflow: auto; max-height: 70vh; border-radius: 8px; background: var(--sunken); touch-action: manipulation }
+.stage canvas { display: block; cursor: crosshair; max-width: none }
+.counter { font: 700 40px/1 var(--f-display); font-variant-numeric: tabular-nums }
+
+.hist { display: grid; gap: 8px }
+.hitem { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+.hitem .v { font: 700 20px/1.1 var(--f-display); text-align: right; font-variant-numeric: tabular-nums }
+.hitem button { grid-column: 2; justify-self: end; font-size: 12px; background: none; border: 0; color: var(--bad); cursor: pointer; padding: 2px 0 }
+.empty { padding: 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Склад · пересчёт остатков</div>
+      <h1>Фотопересчёт товара</h1>
+    </div>
+    <span id="backendPill" class="pill wait"><i></i><span>Проверяю подключение…</span></span>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="ai" aria-selected="true">По фото</button>
+    <button role="tab" data-tab="manual" aria-selected="false">Отметить</button>
+    <button role="tab" data-tab="calc" aria-selected="false">Калькулятор</button>
+    <button role="tab" data-tab="hist" aria-selected="false">История</button>
+  </nav>
+
+  <!-- ============ AI COUNT ============ -->
+  <section id="tab-ai" class="wrap" role="tabpanel">
+    <div class="card">
+      <div class="step"><b>1</b><h2>Что считаем</h2></div>
+      <label class="f">Товар (название или артикул)
+        <input id="itemName" placeholder="напр. ершик для унитаза, вилки, коробки 40×30×20">
+      </label>
+      <div class="f muted small">Как лежит</div>
+      <div class="chips" id="kindChips">
+        <button data-kind="boxes" aria-pressed="false">Коробки</button>
+        <button data-kind="pallet" aria-pressed="false">Паллета</button>
+        <button data-kind="shelf" aria-pressed="false">На полке рядами</button>
+        <button data-kind="loose" aria-pressed="false">Россыпь</button>
+        <button data-kind="bin" aria-pressed="false">В ящике / корзине</button>
+        <button data-kind="auto" aria-pressed="true">Не знаю</button>
+      </div>
+      <div class="grid2">
+        <label class="f">Штук в коробке (если известно)
+          <input id="perPack" type="number" inputmode="numeric" min="1" placeholder="—">
+        </label>
+        <label class="f">Ожидается по системе (необязательно)
+          <input id="expected" type="number" inputmode="numeric" min="0" placeholder="—">
+        </label>
+      </div>
+      <label class="f">Подсказка (что не видно на фото)
+        <textarea id="note" placeholder="напр. за первым рядом ещё 2 ряда, нижний ярус полный, внутри коробок по 4 упаковки"></textarea>
+      </label>
+    </div>
+
+    <div class="card">
+      <div class="step"><b>2</b><h2>Фото</h2></div>
+      <p class="muted small">Общий план обязателен. Крупный план и эталон заметно снижают погрешность.</p>
+      <div class="slot" data-role="overview">
+        <header><h3>Общий план места</h3><span class="muted small">1–4 фото, видно всё место целиком</span></header>
+        <div class="thumbs"></div>
+        <div class="row">
+          <label class="btn grow">Снять<input type="file" accept="image/*" capture="environment"></label>
+          <label class="btn grow">Из галереи<input type="file" accept="image/*" multiple></label>
+        </div>
+      </div>
+      <div class="slot" data-role="close">
+        <header><h3>Вблизи</h3><span class="muted small">торец стопки, один ряд, слой россыпи</span></header>
+        <div class="thumbs"></div>
+        <div class="row">
+          <label class="btn grow">Снять<input type="file" accept="image/*" capture="environment"></label>
+          <label class="btn grow">Из галереи<input type="file" accept="image/*" multiple></label>
+        </div>
+      </div>
+      <div class="slot" data-role="unit">
+        <header><h3>Эталон: 1 единица</h3><span class="muted small">необязательно; рядом с рукой или рулеткой для масштаба</span></header>
+        <div class="thumbs"></div>
+        <div class="row">
+          <label class="btn grow">Снять<input type="file" accept="image/*" capture="environment"></label>
+          <label class="btn grow">Из галереи<input type="file" accept="image/*" multiple></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><b>3</b><h2>Подсчёт</h2></div>
+      <div class="f muted small">Режим</div>
+      <div class="chips" id="modeChips">
+        <button data-mode="fast" aria-pressed="false">Быстро · 1 проход</button>
+        <button data-mode="accurate" aria-pressed="true">Точно · 3 метода</button>
+      </div>
+      <label class="row small"><input id="useTiles" type="checkbox" style="width:auto"> Мелкий товар: дополнительно считать общий план по четвертям</label>
+      <button id="runBtn" class="btn primary">Посчитать</button>
+      <div id="passes" class="passes" hidden></div>
+      <div class="row" id="stopRow" hidden><button id="stopBtn" class="btn grow">Остановить</button></div>
+      <div id="runErr" class="note warn" hidden></div>
+    </div>
+
+    <div class="card" id="resultCard">
+      <div class="row" style="justify-content:space-between">
+        <h2>Результат</h2><span id="resTag" class="tag ex">Пример</span>
+      </div>
+      <div id="result"></div>
+    </div>
+
+    <details class="card" id="settings">
+      <summary>Настройки подключения</summary>
+      <div class="grid" style="display:grid;gap:10px">
+        <p class="small muted" id="settingsHint"></p>
+        <div id="apiFields" class="grid" style="display:grid;gap:10px">
+          <label class="f">Ключ Anthropic API (хранится только на этом устройстве)
+            <input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…">
+          </label>
+          <label class="f">Модель
+            <select id="model">
+              <option value="claude-opus-5-5">Claude Opus 5.5 — точнее</option>
+              <option value="claude-sonnet-5-5">Claude Sonnet 5.5 — быстрее и дешевле</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ MANUAL ============ -->
+  <section id="tab-manual" class="wrap" role="tabpanel" hidden>
+    <div class="card">
+      <h2>Отметить вручную на фото</h2>
+      <p class="muted small">Нажимайте на каждую единицу (или коробку) — появится метка с номером. Нажатие на метку убирает её. Удобно, чтобы проверить ИИ или посчитать то, что ИИ видит плохо.</p>
+      <div class="row">
+        <label class="btn grow">Снять<input id="mPhotoCam" type="file" accept="image/*" capture="environment"></label>
+        <label class="btn grow">Из галереи<input id="mPhoto" type="file" accept="image/*"></label>
+        <button id="mFromAi" class="btn grow">Взять общий план</button>
+      </div>
+      <div class="stage" id="stage"><canvas id="mCanvas" width="10" height="10"></canvas></div>
+      <div class="row small">
+        <span class="muted">Масштаб</span>
+        <div class="chips" id="zoomChips">
+          <button data-z="1" aria-pressed="true">1×</button><button data-z="2" aria-pressed="false">2×</button><button data-z="3" aria-pressed="false">3×</button>
+        </div>
+        <span class="muted">Метка</span>
+        <div class="chips" id="dotChips">
+          <button data-d="0.6" aria-pressed="false">S</button><button data-d="1" aria-pressed="true">M</button><button data-d="1.6" aria-pressed="false">L</button>
+        </div>
+      </div>
+      <div class="grid3">
+        <label class="f">Отмечено<output id="mMarks" class="counter">0</output></label>
+        <label class="f">× слоёв/рядов в глубину<input id="mLayers" type="number" inputmode="numeric" min="1" value="1"></label>
+        <label class="f">× штук в каждой метке<input id="mPer" type="number" inputmode="numeric" min="1" value="1"></label>
+      </div>
+      <div class="readout"><span class="eyebrow">Итого</span><span class="big" id="mTotal">0 <small>шт</small></span></div>
+      <div class="row">
+        <button id="mUndo" class="btn grow">Отменить</button>
+        <button id="mClear" class="btn grow">Очистить</button>
+        <button id="mSave" class="btn grow">В историю</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CALC ============ -->
+  <section id="tab-calc" class="wrap" role="tabpanel" hidden>
+    <div class="card">
+      <h2>По укладке</h2>
+      <p class="muted small">Для коробок и ровных рядов: посчитайте по фото одну сторону, остальное перемножится.</p>
+      <div class="grid2">
+        <label class="f">Рядов по фронту<input id="cA" type="number" inputmode="numeric" min="0" value="6"></label>
+        <label class="f">Рядов в глубину<input id="cB" type="number" inputmode="numeric" min="0" value="4"></label>
+        <label class="f">Ярусов по высоте<input id="cC" type="number" inputmode="numeric" min="0" value="5"></label>
+        <label class="f">Штук в коробке<input id="cD" type="number" inputmode="numeric" min="1" value="1"></label>
+        <label class="f">Неполный ярус / россыпь, шт<input id="cE" type="number" inputmode="numeric" min="0" value="0"></label>
+        <label class="f">Пустых мест (минус), коробок<input id="cF" type="number" inputmode="numeric" min="0" value="0"></label>
+      </div>
+      <div class="readout"><span class="eyebrow">Итого</span><span class="big" id="cTotal">120 <small>шт</small></span><span class="muted small num" id="cFormula"></span></div>
+      <button class="btn" id="cSave">В историю</button>
+    </div>
+    <div class="card">
+      <h2>По весу</h2>
+      <p class="muted small">Самый точный способ для россыпи (вилки, ложки, крепёж): взвесьте 10–20 штук, затем всё целиком.</p>
+      <div class="grid2">
+        <label class="f">Вес всего товара, кг<input id="wTotal" type="number" inputmode="decimal" min="0" step="0.001" value="12.4"></label>
+        <label class="f">Тара (ящик, корзина), кг<input id="wTare" type="number" inputmode="decimal" min="0" step="0.001" value="1.1"></label>
+        <label class="f">Взвесили штук эталона<input id="wN" type="number" inputmode="numeric" min="1" value="20"></label>
+        <label class="f">Их вес, г<input id="wSample" type="number" inputmode="decimal" min="0" step="0.1" value="840"></label>
+        <label class="f">Шаг весов, г<input id="wStep" type="number" inputmode="decimal" min="0" step="0.1" value="5"></label>
+      </div>
+      <div class="readout"><span class="eyebrow">Итого</span><span class="big" id="wRes">269 <small>шт</small></span><span class="pm" id="wPm"></span><span class="muted small num" id="wFormula"></span></div>
+      <button class="btn" id="wSave">В историю</button>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="tab-hist" class="wrap" role="tabpanel" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>История пересчётов</h2><button id="hCopy" class="btn">Скопировать всё</button></div>
+      <p class="muted small">Хранится только на этом устройстве.</p>
+      <div id="hist" class="hist"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("fpc:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("fpc:" + k, JSON.stringify(v)); } catch {} },
+};
+const fmt = n => Math.round(n).toLocaleString("ru-RU");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  $$("nav.tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  $$("section[role=tabpanel]").forEach(s => { s.hidden = s.id !== "tab-" + name; });
+  if (name === "hist") renderHistory();
+  if (name === "manual") drawManual();
+}
+$$("nav.tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+function chipGroup(el, attr, onPick) {
+  el.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("button", el).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    onPick(b.dataset[attr]);
+  });
+}
+let kind = "auto", mode = "accurate";
+chipGroup($("#kindChips"), "kind", v => kind = v);
+chipGroup($("#modeChips"), "mode", v => mode = v);
+
+/* ---------- connection: Claude inside the app, or own API key ---------- */
+const conn = { sample: null, maxImages: 20, checked: false };
+const settings = { apiKey: store.get("apiKey", ""), model: store.get("model", "claude-opus-5-5") };
+$("#apiKey").value = settings.apiKey;
+$("#model").value = settings.model;
+$("#apiKey").onchange = e => { settings.apiKey = e.target.value.trim(); store.set("apiKey", settings.apiKey); renderBackend(); };
+$("#model").onchange = e => { settings.model = e.target.value; store.set("model", settings.model); };
+
+async function initBackend() {
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      const s = await window.claude.use("sample");
+      if (s) {
+        const lim = await s.limits().catch(() => null);
+        if (lim && lim.images) { conn.sample = s; conn.maxImages = lim.images.maxCount || 20; }
+      }
+    }
+  } catch {}
+  conn.checked = true;
+  renderBackend();
+}
+function renderBackend() {
+  const pill = $("#backendPill"), txt = $("span", pill);
+  $("#apiFields").hidden = !!conn.sample;
+  if (conn.sample) {
+    pill.className = "pill ok"; txt.textContent = "Claude подключён";
+    $("#settingsHint").textContent = "Подсчёт идёт через ваш аккаунт Claude. При первом подсчёте приложение спросит разрешение отправить фото.";
+  } else if (settings.apiKey) {
+    pill.className = "pill ok"; txt.textContent = "Ключ API задан";
+    $("#settingsHint").textContent = "Фото отправляются напрямую в Anthropic API с этого устройства.";
+  } else if (!conn.checked) {
+    pill.className = "pill wait"; txt.textContent = "Проверяю подключение…";
+  } else {
+    pill.className = "pill bad"; txt.textContent = "Нужен ключ API";
+    $("#settingsHint").textContent = "Откройте страницу в приложении Claude или впишите ключ Anthropic API. Без подключения работают вкладки «Отметить» и «Калькулятор».";
+    $("#settings").open = true;
+  }
+}
+renderBackend();
+initBackend();
+
+/* ---------- photos ---------- */
+const photos = { overview: [], close: [], unit: [] };
+const ROLE_TEXT = { overview: "общий план места хранения", close: "крупный план (вблизи)", unit: "эталон — одна единица товара" };
+$$(".slot").forEach(slot => {
+  const role = slot.dataset.role;
+  $$("input[type=file]", slot).forEach(inp => inp.onchange = () => {
+    for (const f of inp.files) photos[role].push({ file: f, url: URL.createObjectURL(f) });
+    inp.value = "";
+    renderThumbs(slot, role);
+  });
+});
+function renderThumbs(slot, role) {
+  const box = $(".thumbs", slot);
+  box.innerHTML = "";
+  photos[role].forEach((p, i) => {
+    const d = document.createElement("div"); d.className = "thumb";
+    d.innerHTML = `<img alt="" src="${p.url}"><button aria-label="Убрать фото">×</button>`;
+    $("button", d).onclick = () => { URL.revokeObjectURL(p.url); photos[role].splice(i, 1); renderThumbs(slot, role); };
+    box.append(d);
+  });
+}
+
+async function loadBitmap(file) {
+  try { return await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch {
+    const img = new Image(); img.src = URL.createObjectURL(file); await img.decode(); return img;
+  }
+}
+function toJpeg(src, sx, sy, sw, sh, maxSide = 1568) {
+  const k = Math.min(1, maxSide / Math.max(sw, sh));
+  const c = document.createElement("canvas");
+  c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+  c.getContext("2d").drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  return new Promise(res => c.toBlob(res, "image/jpeg", 0.86));
+}
+async function compress(file) { const b = await loadBitmap(file); return toJpeg(b, 0, 0, b.width, b.height); }
+async function quarters(file) {
+  const b = await loadBitmap(file), w = b.width / 2, h = b.height / 2, out = [];
+  for (const [x, y] of [[0, 0], [w, 0], [0, h], [w, h]]) out.push(await toJpeg(b, x, y, w, h));
+  return out;
+}
+const toB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(blob); });
+
+/* ---------- asking Claude ---------- */
+function parseLooseJSON(text) {
+  try { return JSON.parse(text); } catch {}
+  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/); if (m) { try { return JSON.parse(m[1]); } catch {} }
+  const a = text.indexOf("{"), b = text.lastIndexOf("}");
+  if (a >= 0 && b > a) return JSON.parse(text.slice(a, b + 1));
+  throw { code: "invalid_json" };
+}
+async function askJSON(prompt, blobs, signal) {
+  if (conn.sample) return conn.sample.json(prompt, { images: blobs, signal, modelTier: "complex" });
+  if (!settings.apiKey) throw { code: "no_backend" };
+  const content = [];
+  for (const b of blobs) content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: await toB64(b) } });
+  content.push({ type: "text", text: prompt });
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", signal,
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": settings.apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "server-side-fallback-2026-07-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: settings.model, max_tokens: 16000, fallbacks: "default",
+      output_config: { effort: "high" },
+      messages: [{ role: "user", content }],
+    }),
+  }).catch(e => { throw e.name === "AbortError" ? { code: "cancelled" } : { code: "network" }; });
+  if (!r.ok) throw { code: "http_" + r.status, message: await r.text().catch(() => "") };
+  const msg = await r.json();
+  if (msg.stop_reason === "refusal") throw { code: "refused" };
+  return parseLooseJSON(msg.content.filter(c => c.type === "text").map(c => c.text).join("\n"));
+}
+function errText(e) {
+  const c = e && e.code;
+  return ({
+    no_backend: "Нет подключения: откройте страницу в приложении Claude или впишите ключ API в настройках ниже.",
+    not_granted: "Доступ к Claude не разрешён для этой страницы. Разрешите его в меню артефакта и обновите страницу.",
+    sampling_disabled: "Claude недоступен для этого аккаунта.",
+    images_unavailable: "В этом окне нельзя отправлять фото. Откройте страницу в приложении Claude.",
+    image_rejected: "Одно из фото не подошло (формат или размер). Попробуйте снять ещё раз.",
+    rate_limited: "Слишком много запросов подряд. Подождите минуту и попробуйте снова.",
+    invalid_json: "Ответ пришёл в неожиданном виде. Нажмите «Посчитать» ещё раз.",
+    refused: "Модель отказалась обрабатывать эти фото. Попробуйте другие снимки.",
+    network: "Нет связи с сервером. Проверьте интернет.",
+    http_401: "Ключ API не подходит. Проверьте его в настройках.",
+    http_429: "Лимит запросов API исчерпан. Подождите и повторите.",
+    cancelled: "Остановлено.",
+  })[c] || ("Сбой при подсчёте (" + (c || "ошибка") + "). Попробуйте ещё раз.");
+}
+
+const KIND_TEXT = { boxes: "коробки", pallet: "паллета", shelf: "на полке рядами", loose: "россыпь", bin: "в ящике или корзине", auto: "не указано" };
+const METHODS = {
+  direct: { name: "Прямой счёт", text: "ПРЯМОЙ СЧЁТ. Пройди по изображению систематически (слева направо, ряд за рядом) и посчитай каждую видимую единицу. Затем добавь скрытые единицы только там, где структура однозначно это показывает (например, полный ряд коробок уходит вглубь)." },
+  structure: { name: "Структура укладки", text: "СТРУКТУРА. Определи схему укладки: сколько по фронту × в глубину × ярусов, сколько штук в коробке (по эталону, этикетке или подсказке), какие места пустые или неполные. Посчитай произведение и поправки." },
+  volume: { name: "Объём и размер единицы", text: "ОБЪЁМ. Оцени габариты занятого товаром места и размер одной единицы (по эталону и знакомым предметам: паллета 120×80 см, ячейка стеллажа, коробка). Учти плотность укладки (для россыпи обычно 0.3–0.6 от объёма). Посчитай количество через объём и проверь видимым счётом." },
+  combined: { name: "Комбинированный", text: "Посчитай видимые единицы, определи структуру укладки и проверь итог через габариты и размер единицы. Дай одну итоговую оценку." },
+  tiles: { name: "По четвертям", text: "ПО ЧЕТВЕРТЯМ. Последние 4 фото — четверти первого общего плана (верх-лево, верх-право, низ-лево, низ-право), без перекрытия. Посчитай единицы в каждой четверти отдельно (единица на границе относится к той четверти, где её центр), сложи и учти скрытые части по структуре." },
+};
+
+function buildPrompt(methodKey, legend) {
+  const perPack = $("#perPack").value, note = $("#note").value.trim(), name = $("#itemName").value.trim();
+  return `Ты помогаешь кладовщику пересчитать товар на складе магазина по фотографиям.
+
+Фотографии (в порядке передачи):
+${legend.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+
+Сведения от кладовщика:
+- Товар: ${name || "не указан, определи по фото"}
+- Как лежит: ${KIND_TEXT[kind]}
+- Штук в одной коробке/упаковке: ${perPack || "неизвестно"}
+- Подсказка: ${note || "нет"}
+
+Правила:
+- Итог — в штуках товара. Если товар в закрытых коробках и штук в коробке не известно и не видно на этикетке, считай коробки и поставь unit "коробок".
+- Разные фото могут показывать одно и то же место с разных сторон: не считай одно и то же дважды. Крупные планы нужны, чтобы понять, сколько единиц в ряду, стопке или слое.
+- Эталон показывает одну единицу: по нему узнай товар и его размер.
+- Скрытые части (задние ряды, нижние ярусы, середина кучи) оценивай по видимой структуре и отражай неуверенность в low/high.
+- low и high — диапазон, в который реальное количество попадает с вероятностью около 90%.
+
+Метод этого прохода: ${METHODS[methodKey].text}
+
+Ответь только JSON-объектом такого вида, без текста вокруг:
+{"item":"что за товар","unit":"шт","arrangement":"single|grid|stack|mixed|loose","visible_count":0,"structure":"кратко схема, напр. 6 по фронту × 4 вглубь × 5 ярусов × 12 шт","estimate":0,"low":0,"high":0,"confidence":0.0,"hidden_share":0.0,"notes":"1–2 предложения: что видно, что предположено","advice":["что доснять или проверить, чтобы сузить диапазон"]}
+arrangement: grid — ровные ряды коробок или товара; stack — стопки; loose — россыпь, куча; mixed — смешанно; single — несколько отдельных предметов, все видны.
+confidence — уверенность от 0 до 1. hidden_share — доля товара, которую не видно напрямую, от 0 до 1.`;
+}
+
+/* ---------- combining passes into one number with an error margin ---------- */
+const FLOOR = { single: 0, grid: 0.02, stack: 0.04, mixed: 0.08, loose: 0.12 };
+const median = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+function combine(results) {
+  const ok = results.filter(r => r && Number.isFinite(+r.estimate));
+  const est = Math.round(median(ok.map(r => +r.estimate)));
+  const votes = {}; ok.forEach(r => votes[r.arrangement] = (votes[r.arrangement] || 0) + 1);
+  const arrangement = Object.keys(votes).sort((a, b) => votes[b] - votes[a])[0] || "mixed";
+  const spread = ok.length > 1 ? (Math.max(...ok.map(r => +r.estimate)) - Math.min(...ok.map(r => +r.estimate))) / 2 : 0;
+  const halves = ok.map(r => { const lo = +r.low, hi = +r.high; return Number.isFinite(lo) && Number.isFinite(hi) && hi >= lo ? (hi - lo) / 2 : +r.estimate * 0.15; });
+  const model = median(halves);
+  const floor = est * (FLOOR[arrangement] ?? 0.08);
+  const margin = Math.round(Math.max(floor, Math.sqrt(spread * spread + model * model)));
+  const conf = median(ok.map(r => Math.min(1, Math.max(0, +r.confidence || 0))));
+  const relErr = est ? margin / est : 1;
+  const level = relErr <= 0.05 && conf >= 0.7 ? "hi" : relErr <= 0.15 && conf >= 0.45 ? "mid" : "lo";
+  const unit = (ok.find(r => r.unit) || {}).unit || "шт";
+  const best = ok.find(r => r._method === "structure") || ok[0];
+  const advice = [...new Set(ok.flatMap(r => Array.isArray(r.advice) ? r.advice : []))].slice(0, 5);
+  return { est, margin, low: Math.max(0, est - margin), high: est + margin, spread: Math.round(spread), model: Math.round(model), floor: Math.round(floor),
+    arrangement, conf, level, unit, item: best.item, structure: best.structure, notes: best.notes, advice, passes: ok };
+}
+
+/* ---------- run ---------- */
+let running = null, lastResult = null;
+$("#stopBtn").onclick = () => running && running.abort();
+$("#runBtn").onclick = async () => {
+  const err = $("#runErr"); err.hidden = true;
+  if (!photos.overview.length) { err.textContent = "Добавьте хотя бы одно фото общего плана."; err.hidden = false; return; }
+  if (!conn.sample && !settings.apiKey) { err.textContent = errText({ code: "no_backend" }); err.hidden = false; $("#settings").open = true; return; }
+
+  running = new AbortController();
+  $("#runBtn").disabled = true; $("#stopRow").hidden = false;
+  const passBox = $("#passes"); passBox.hidden = false; passBox.innerHTML = '<div class="pass run"><span>Готовлю фото</span><span class="st">…</span></div>';
+  try {
+    const base = [], legend = [];
+    for (const role of ["overview", "close", "unit"]) {
+      photos[role].forEach((p, i) => { base.push(p.file); legend.push(ROLE_TEXT[role] + (photos[role].length > 1 ? ` (${i + 1})` : "")); });
+    }
+    const limit = Math.max(1, conn.maxImages - ($("#useTiles").checked ? 4 : 0));
+    const files = base.slice(0, limit), leg = legend.slice(0, limit);
+    const blobs = []; for (const f of files) blobs.push(await compress(f));
+
+    const plan = (mode === "fast" ? ["combined"] : ["direct", "structure", "volume"]).map(m => ({ m, blobs, legend: leg }));
+    if ($("#useTiles").checked) {
+      const q = await quarters(photos.overview[0].file);
+      plan.push({ m: "tiles", blobs: [...blobs, ...q], legend: [...leg, "четверть общего плана 1: верх-лево", "четверть 2: верх-право", "четверть 3: низ-лево", "четверть 4: низ-право"] });
+    }
+    passBox.innerHTML = plan.map((p, i) => `<div class="pass" id="pass${i}"><span>${METHODS[p.m].name}</span><span class="st">в очереди</span></div>`).join("");
+    const results = await Promise.all(plan.map(async (p, i) => {
+      const row = $("#pass" + i), st = $(".st", row);
+      row.className = "pass run"; st.textContent = "считаю…";
+      try {
+        const r = await askJSON(buildPrompt(p.m, p.legend), p.blobs, running.signal);
+        r._method = p.m; r._name = METHODS[p.m].name;
+        row.className = "pass done"; st.textContent = "≈ " + fmt(+r.estimate);
+        return r;
+      } catch (e) {
+        row.className = "pass fail"; st.textContent = e && e.code === "cancelled" ? "остановлен" : "ошибка";
+        row.title = errText(e); p.err = e; return null;
+      }
+    }));
+    if (!results.some(Boolean)) throw plan.find(p => p.err)?.err || { code: "unknown" };
+    lastResult = { ...combine(results), name: $("#itemName").value.trim(), expected: $("#expected").value };
+    renderResult(lastResult, false);
+    $("#resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    err.textContent = errText(e); err.hidden = false;
+  } finally {
+    running = null; $("#runBtn").disabled = false; $("#stopRow").hidden = true;
+  }
+};
+
+const ARR_TEXT = { single: "отдельные предметы", grid: "ровные ряды", stack: "стопки", mixed: "смешанная укладка", loose: "россыпь" };
+const LEVEL_TEXT = { hi: "Надёжно", mid: "Ориентир", lo: "Грубая оценка" };
+function renderResult(R, example) {
+  $("#resTag").className = "tag " + (example ? "ex" : R.level);
+  $("#resTag").textContent = example ? "Пример" : LEVEL_TEXT[R.level];
+  const exp = +R.expected;
+  const diff = R.expected !== "" && Number.isFinite(exp)
+    ? (exp >= R.low && exp <= R.high
+        ? `<div class="note">По системе ${fmt(exp)} — попадает в диапазон, расхождения не видно.</div>`
+        : `<div class="note warn">По системе ${fmt(exp)} — вне диапазона (разница ${exp > R.est ? "−" : "+"}${fmt(Math.abs(R.est - exp))}). Стоит пересчитать вручную или взвесить.</div>`)
+    : "";
+  $("#result").innerHTML = `
+    <div class="readout">
+      <span class="eyebrow">${esc(R.item || R.name || "Товар")}</span>
+      <span class="big">${fmt(R.est)} <small>${esc(R.unit)}</small></span>
+      <span class="pm">± ${fmt(R.margin)} ${esc(R.unit)}</span>
+      <span class="muted small num">вероятно от ${fmt(R.low)} до ${fmt(R.high)} · ${ARR_TEXT[R.arrangement] || R.arrangement} · уверенность ${Math.round(R.conf * 100)}%</span>
+    </div>
+    ${diff}
+    ${R.structure ? `<p><b>Схема:</b> ${esc(R.structure)}</p>` : ""}
+    ${R.notes ? `<p class="muted">${esc(R.notes)}</p>` : ""}
+    <div class="errbar">
+      <h3>Из чего погрешность</h3>
+      <div><span>Расхождение между методами</span><span class="num">± ${fmt(R.spread)}</span></div>
+      <div><span>Неуверенность в скрытых частях</span><span class="num">± ${fmt(R.model)}</span></div>
+      <div><span>Минимум для типа «${ARR_TEXT[R.arrangement] || R.arrangement}»</span><span class="num">± ${fmt(R.floor)}</span></div>
+      <p class="muted small">Итог = √(расхождение² + неуверенность²), но не меньше минимума.</p>
+    </div>
+    <div class="scroll"><table>
+      <tr><th>Метод</th><th class="r">Видно</th><th class="r">Оценка</th><th class="r">Диапазон</th></tr>
+      ${R.passes.map(p => `<tr><td>${esc(p._name)}</td><td class="r num">${fmt(+p.visible_count || 0)}</td><td class="r num">${fmt(+p.estimate)}</td><td class="r num">${fmt(+p.low)}–${fmt(+p.high)}</td></tr>`).join("")}
+    </table></div>
+    ${R.advice.length ? `<div><h3>Как сузить диапазон</h3><ul class="tips">${R.advice.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>` : ""}
+    ${example ? '<p class="note">Это пример, чтобы было видно, как выглядит ответ. Добавьте свои фото и нажмите «Посчитать».</p>'
+      : '<div class="row"><button class="btn grow" id="saveAi">В историю</button><button class="btn grow" id="toManual">Проверить вручную</button></div>'}`;
+  if (!example) {
+    $("#saveAi").onclick = e => { addHistory({ name: R.name || R.item, value: R.est, margin: R.margin, unit: R.unit, how: "ИИ по фото" }); e.target.textContent = "Сохранено"; e.target.disabled = true; };
+    $("#toManual").onclick = () => { loadManual(photos.overview[0].file); showTab("manual"); };
+  }
+}
+renderResult({
+  item: "Ершик для унитаза в упаковке", name: "", unit: "шт", est: 240, margin: 14, low: 226, high: 254, arrangement: "grid", conf: 0.72, level: "mid",
+  structure: "5 коробок по фронту × 4 вглубь × 3 яруса × 4 шт в коробке", notes: "Передний ряд виден полностью, задние ряды по торцу стопки.",
+  spread: 8, model: 12, floor: 5, expected: "",
+  passes: [
+    { _name: "Прямой счёт", visible_count: 60, estimate: 232, low: 210, high: 250 },
+    { _name: "Структура укладки", visible_count: 60, estimate: 240, low: 228, high: 248 },
+    { _name: "Объём и размер единицы", visible_count: 60, estimate: 248, low: 220, high: 270 },
+  ],
+  advice: ["Снимите стопку сбоку, чтобы были видны все ряды в глубину", "Откройте одну коробку и сфотографируйте содержимое"],
+}, true);
+
+/* ---------- manual marking ---------- */
+const M = { img: null, marks: [], zoom: 1, dot: 1 };
+const cv = $("#mCanvas"), cx = cv.getContext("2d");
+async function loadManual(file) {
+  const b = await loadBitmap(file);
+  const k = Math.min(1, 2000 / Math.max(b.width, b.height));
+  const c = document.createElement("canvas"); c.width = Math.round(b.width * k); c.height = Math.round(b.height * k);
+  c.getContext("2d").drawImage(b, 0, 0, c.width, c.height);
+  M.img = c; M.marks = []; drawManual();
+}
+function drawManual() {
+  if (!M.img) {
+    cv.width = 600; cv.height = 300; cv.style.width = "100%";
+    cx.fillStyle = getComputedStyle(document.body).getPropertyValue("--muted");
+    cx.font = "20px system-ui"; cx.textAlign = "center";
+    cx.clearRect(0, 0, 600, 300); cx.fillText("Загрузите фото, затем нажимайте на каждую единицу", 300, 155);
+  } else {
+    cv.width = M.img.width; cv.height = M.img.height; cv.style.width = (M.zoom * 100) + "%";
+    cx.drawImage(M.img, 0, 0);
+    const r = Math.max(8, Math.max(cv.width, cv.height) / 90) * M.dot;
+    cx.textAlign = "center"; cx.textBaseline = "middle"; cx.font = `700 ${Math.round(r * 1.05)}px system-ui`;
+    M.marks.forEach((p, i) => {
+      cx.beginPath(); cx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      cx.fillStyle = "#ffd400"; cx.fill(); cx.lineWidth = Math.max(2, r / 5); cx.strokeStyle = "#14202b"; cx.stroke();
+      cx.fillStyle = "#14202b"; cx.fillText(String(i + 1), p.x, p.y + 1);
+    });
+  }
+  const total = M.marks.length * Math.max(1, +$("#mLayers").value || 1) * Math.max(1, +$("#mPer").value || 1);
+  $("#mMarks").textContent = M.marks.length;
+  $("#mTotal").innerHTML = `${fmt(total)} <small>шт</small>`;
+  return total;
+}
+cv.addEventListener("click", e => {
+  if (!M.img) return;
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * cv.width / rect.width, y = (e.clientY - rect.top) * cv.height / rect.height;
+  const r = Math.max(8, Math.max(cv.width, cv.height) / 90) * M.dot;
+  const hit = M.marks.findIndex(p => Math.hypot(p.x - x, p.y - y) <= r);
+  if (hit >= 0) M.marks.splice(hit, 1); else M.marks.push({ x, y });
+  drawManual();
+});
+for (const id of ["#mPhoto", "#mPhotoCam"]) $(id).onchange = e => { if (e.target.files[0]) loadManual(e.target.files[0]); e.target.value = ""; };
+$("#mFromAi").onclick = () => photos.overview[0] ? loadManual(photos.overview[0].file) : (showTab("ai"), $("#runErr").textContent = "Сначала добавьте фото общего плана на вкладке «По фото».", $("#runErr").hidden = false);
+chipGroup($("#zoomChips"), "z", v => { M.zoom = +v; drawManual(); });
+chipGroup($("#dotChips"), "d", v => { M.dot = +v; drawManual(); });
+$("#mLayers").oninput = $("#mPer").oninput = drawManual;
+$("#mUndo").onclick = () => { M.marks.pop(); drawManual(); };
+$("#mClear").onclick = () => { M.marks = []; drawManual(); };
+$("#mSave").onclick = e => { addHistory({ name: $("#itemName").value.trim() || "Ручная отметка", value: drawManual(), margin: 0, unit: "шт", how: "Отметки на фото" }); flash(e.target); };
+
+/* ---------- calculators ---------- */
+const val = id => Math.max(0, +$(id).value || 0);
+function calcStack() {
+  const boxes = val("#cA") * val("#cB") * val("#cC") - val("#cF");
+  const t = Math.max(0, boxes) * Math.max(1, val("#cD")) + val("#cE");
+  $("#cTotal").innerHTML = `${fmt(t)} <small>шт</small>`;
+  $("#cFormula").textContent = `(${val("#cA")} × ${val("#cB")} × ${val("#cC")} − ${val("#cF")}) × ${Math.max(1, val("#cD"))} + ${val("#cE")}`;
+  return t;
+}
+function calcWeight() {
+  const net = (val("#wTotal") - val("#wTare")) * 1000, n = Math.max(1, val("#wN")), ws = val("#wSample"), step = val("#wStep");
+  if (!ws || net <= 0) { $("#wRes").innerHTML = "— <small>шт</small>"; $("#wPm").textContent = ""; $("#wFormula").textContent = "Введите вес"; return null; }
+  const unit = ws / n, count = net / unit;
+  // error: scale step on the sample, on the total and on the tare, plus ~1% spread of unit weights across the batch
+  const rel = Math.sqrt((step / ws) ** 2 + (2 * step / net) ** 2 + 0.01 ** 2);
+  const pm = Math.max(1, Math.round(count * rel));
+  $("#wRes").innerHTML = `${fmt(count)} <small>шт</small>`;
+  $("#wPm").textContent = `± ${fmt(pm)} шт`;
+  $("#wFormula").textContent = `1 шт ≈ ${unit.toFixed(2)} г · нетто ${fmt(net)} г`;
+  return { count: Math.round(count), pm };
+}
+$$("#tab-calc input").forEach(i => i.oninput = () => { calcStack(); calcWeight(); });
+calcStack(); calcWeight();
+$("#cSave").onclick = e => { addHistory({ name: $("#itemName").value.trim() || "Расчёт по укладке", value: calcStack(), margin: 0, unit: "шт", how: "Калькулятор укладки" }); flash(e.target); };
+$("#wSave").onclick = e => { const w = calcWeight(); if (!w) return; addHistory({ name: $("#itemName").value.trim() || "Расчёт по весу", value: w.count, margin: w.pm, unit: "шт", how: "По весу" }); flash(e.target); };
+function flash(btn) { const t = btn.textContent; btn.textContent = "Сохранено"; setTimeout(() => btn.textContent = t, 1400); }
+
+/* ---------- history ---------- */
+function addHistory(entry) { const h = store.get("history", []); h.unshift({ ...entry, at: Date.now() }); store.set("history", h.slice(0, 200)); }
+function renderHistory() {
+  const h = store.get("history", []), box = $("#hist");
+  if (!h.length) { box.innerHTML = '<div class="empty">Пока пусто. Сохраните результат на любой вкладке кнопкой «В историю».</div>'; return; }
+  box.innerHTML = h.map((e, i) => `<div class="hitem">
+      <div><b>${esc(e.name || "Без названия")}</b><div class="muted small">${esc(e.how)} · ${new Date(e.at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div></div>
+      <div class="v">${fmt(e.value)}${e.margin ? ` <span class="muted small">± ${fmt(e.margin)}</span>` : ""}</div>
+      <button data-i="${i}">Удалить</button></div>`).join("");
+  $$("button[data-i]", box).forEach(b => b.onclick = () => { const a = store.get("history", []); a.splice(+b.dataset.i, 1); store.set("history", a); renderHistory(); });
+}
+$("#hCopy").onclick = async e => {
+  const text = store.get("history", []).map(x => `${new Date(x.at).toLocaleString("ru-RU")}\t${x.name}\t${Math.round(x.value)}${x.margin ? " ± " + Math.round(x.margin) : ""} ${x.unit}\t${x.how}`).join("\n");
+  try { await navigator.clipboard.writeText(text); e.target.textContent = "Скопировано"; }
+  catch { e.target.textContent = "Не удалось скопировать"; }
+  setTimeout(() => e.target.textContent = "Скопировать всё", 1500);
+};
+drawManual();
+</script>
+</body>
+</html>

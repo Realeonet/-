@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>תגבור - אנגלית ותנ״ך</title>
+<title>תגבור - אנגלית, תנ״ך ומדעים</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#2f6fdd">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
@@ -692,6 +697,10 @@ const hebrewRound = grade => storyRound('hebrew', grade);
 // ===================================================================
 // התחלה
 // ===================================================================
+// שירות עבודה מופעל רק באתר מאובטח (HTTPS) או ב-localhost, ומאפשר שימוש לא מקוון
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 home();
 </script>
 </body>

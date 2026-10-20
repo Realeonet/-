@@ -401,6 +401,7 @@ function parents(){
         : h('p', {textContent:'אין כרגע מילים לחזרה. מעולה! 🎉'})),
     h('div', {className:'card'},
       h('p', {textContent:'להוספת מילים, משפטים או סיפורים: פותחים את הקובץ index.html ומעדכנים את המערכים WORDS, SENTENCES ו-BIBLE בתחילת הקוד.'})),
+    h('p', {className:'center'}, h('a', {href:'privacy.html', textContent:'מדיניות פרטיות'})),
     h('button', {className:'btn alt', textContent:'איפוס התקדמות', onclick:() => {
       if(confirm(`למחוק את כל ההתקדמות של ${me.name}?`)){
         Object.assign(me, {stars:0, rounds:0, missed:{}});

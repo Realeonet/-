@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>תגבור - אנגלית, תנ״ך ומדעים</title>
+<title>מסע הכוכבים</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -25,7 +25,14 @@ p{margin:8px 0}
 .stars{font-size:26px;font-weight:900;color:#b07a00;margin:0}
 .big{display:flex;align-items:center;gap:16px;width:100%;text-align:right;background:#fff;color:inherit;font:inherit;border:3px solid var(--line);border-radius:22px;padding:18px 20px;margin:14px 0;cursor:pointer;box-shadow:0 5px 0 var(--line);min-height:88px}
 .big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--line)}
-.big .ic{font-size:44px;line-height:1}
+.big .ic{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:40px;line-height:1}
+.hero{background:linear-gradient(135deg,#2f6fdd,#7b5cf0);color:#fff;border-radius:24px;padding:20px 22px;margin:12px 0 4px;box-shadow:0 6px 0 #1d4fb0}
+.hero-hi{font-size:26px;font-weight:900;margin:0}
+.hero-stars{font-size:30px;font-weight:900;margin:4px 0}
+.hero-next{margin:4px 0 12px;opacity:.95}
+.bar{height:16px;background:rgba(255,255,255,.35);border-radius:10px;overflow:hidden}
+.fill{display:block;height:100%;background:#ffd23f;border-radius:10px;transition:width .6s}
+button:focus-visible,.choice:focus-visible{outline:4px solid #ffd23f;outline-offset:3px}
 .big b{font-size:24px;display:block}
 .big small{color:var(--muted);font-size:17px}
 .btn{font:inherit;font-weight:700;font-size:22px;min-height:58px;padding:12px 22px;border:0;border-radius:18px;background:var(--blue);color:#fff;cursor:pointer;box-shadow:0 4px 0 #1d4fb0;margin:8px 0;width:100%}
@@ -212,7 +219,7 @@ const BADGES = [
   {at:5,  name:'🌱 צמח צעיר'},
   {at:15, name:'🚀 טייס חלל'},
   {at:30, name:'🏆 אלוף'},
-  {at:60, name:'👑 מלך התגבור'},
+  {at:60, name:'👑 מלך המסע'},
 ];
 
 // ===================================================================
@@ -264,9 +271,11 @@ function view(...nodes){
   app.replaceChildren(...nodes);
   window.scrollTo(0, 0);
 }
-function big(icon, title, sub, onclick){
+function big(icon, title, sub, onclick, color = '#fff3c4'){
+  const ic = h('span', {className:'ic', textContent:icon});
+  ic.style.background = color;
   return h('button', {className:'big', onclick},
-    h('span', {className:'ic', textContent:icon}),
+    ic,
     h('span', {}, h('b', {textContent:title}), h('small', {textContent:sub})));
 }
 function badgeText(){
@@ -350,6 +359,13 @@ function newAccount(){
   name.focus();
 }
 
+// אחוז ההתקדמות אל התואר הבא
+function progressPct(){
+  const prev = BADGES.filter(b => me.stars >= b.at).pop()?.at || 0;
+  const next = BADGES.find(b => b.at > me.stars);
+  return next ? (me.stars - prev) / (next.at - prev) * 100 : 100;
+}
+
 function gradePicker(current, onPick){
   const btns = GRADES.map(g => h('button', {className:'grade' + (g.n === current ? ' on' : ''), textContent:g.name, onclick:() => {
     btns.forEach(b => b.classList.remove('on'));
@@ -371,16 +387,17 @@ function home(){
   round = null;
   if(!me) return accountsScreen();
   view(
-    h('h1', {textContent:`שלום ${me.name}! בוא נתגבר ✨`}),
-    h('div', {className:'card center'},
-      h('p', {className:'stars', textContent:`⭐ ${me.stars} כוכבים`}),
-      h('p', {textContent:badgeText()})),
-    big('🇬🇧', 'אנגלית', 'לשמוע, לכתוב ולהשלים משפטים', () => startRound('en')),
-    big('📜', 'תנ״ך', 'סיפורים ושאלות', () => startRound('tanakh')),
-    big('🔬', 'מדעים', 'נושאים קצרים ושאלות', () => startRound('science')),
-    big('➗', 'מתמטיקה', 'כפל, שברים, שטחים ועוד', () => startRound('math')),
-    big('✍️', 'עברית', 'דקדוק, פיסוק ואוצר מילים', () => startRound('hebrew')),
-    big('👨‍👩‍👧', 'למבוגרים', 'התקדמות ומילים לחזרה', parents),
+    h('div', {className:'hero'},
+      h('p', {className:'hero-hi', textContent:`שלום ${me.name} 👋`}),
+      h('p', {className:'hero-stars', textContent:`⭐ ${me.stars} כוכבים`}),
+      h('p', {className:'hero-next', textContent:badgeText()}),
+      h('div', {className:'bar'}, (() => { const f = h('span', {className:'fill'}); f.style.width = progressPct() + '%'; return f; })())),
+    big('🇬🇧', 'אנגלית', 'לשמוע, לכתוב ולהשלים משפטים', () => startRound('en'), '#ffd6e0'),
+    big('📜', 'תנ״ך', 'סיפורים ושאלות', () => startRound('tanakh'), '#d6e8ff'),
+    big('🔬', 'מדעים', 'נושאים קצרים ושאלות', () => startRound('science'), '#d8f5dc'),
+    big('➗', 'מתמטיקה', 'כפל, שברים, שטחים ועוד', () => startRound('math'), '#ffe8c2'),
+    big('✍️', 'עברית', 'דקדוק, פיסוק ואוצר מילים', () => startRound('hebrew'), '#e6dcff'),
+    big('👨‍👩‍👧', 'למבוגרים', 'התקדמות ומילים לחזרה', parents, '#eeeeee'),
     h('button', {className:'btn alt', textContent:`🎓 כיתה ${gradeName(me.grade)} (שינוי)`, onclick:changeGrade}),
     h('button', {className:'btn alt', textContent:'🔄 החלף חשבון', onclick:accountsScreen}),
   );

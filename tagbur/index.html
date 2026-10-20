@@ -55,6 +55,10 @@ p{margin:8px 0}
 .pop{animation:pop .4s}
 @keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 @keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.grade{font:inherit;font-size:22px;font-weight:700;min-height:56px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);cursor:pointer}
+.grade.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.pin{font:inherit;font-size:24px;width:100%;padding:12px 14px;border:3px solid var(--line);border-radius:14px;margin:8px 0 14px;background:#fff;color:var(--ink)}
 ul{padding-right:22px}
 li{margin:6px 0}
 @media (prefers-reduced-motion:reduce){.shake,.pop{animation:none}}
@@ -117,6 +121,14 @@ const BIBLE = [
    q:'איפה משה קיבל את עשרת הדיברות?', opts:['בהר סיני','בחוף הים','במצרים'], a:'בהר סיני'},
 ];
 
+// תוכן לפי מקצוע וכיתה. לכיתה שאין לה עדיין תוכן יוצגת הודעה מתאימה.
+const GRADES = [1,2,3,4,5,6,7,8,9,10,11,12].map(n => ({n, name:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב'][n-1]}));
+const gradeName = n => GRADES[n-1].name;
+const CONTENT = {
+  en: {5: {words: WORDS, sentences: SENTENCES}},
+  tanakh: {5: {stories: BIBLE}},
+};
+
 const BREAKS = [
   'קום ועשה 10 קפיצות 🤸',
   'מתח ידיים גבוה וזוז קצת 🙆',
@@ -135,20 +147,22 @@ const BADGES = [
 // ===================================================================
 // שמירת התקדמות (רק בדפדפן של המכשיר הזה)
 // ===================================================================
-const KEY = 'tagbur-v1';
+const KEY = 'tagbur-v2';
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 
+// חשבונות: לכל ילד/ה יש שם, קוד סודי והתקדמות משלו
 function load(){
   try{
-    return {stars:0, rounds:0, missed:{}, ...JSON.parse(localStorage.getItem(KEY) || '{}')};
+    return {accounts:[], ...JSON.parse(localStorage.getItem(KEY) || '{}')};
   }catch{
-    return {stars:0, rounds:0, missed:{}};
+    return {accounts:[]};
   }
 }
 function save(){
-  try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch{}
+  try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch{}
 }
-let data = load();
+const store = load();
+let me = null; // החשבון שנכנס עכשיו
 
 // ===================================================================
 // עזרים
@@ -185,36 +199,127 @@ function big(icon, title, sub, onclick){
     h('span', {}, h('b', {textContent:title}), h('small', {textContent:sub})));
 }
 function badgeText(){
-  const cur = BADGES.filter(b => data.stars >= b.at).pop();
-  const next = BADGES.find(b => b.at > data.stars);
+  const cur = BADGES.filter(b => me.stars >= b.at).pop();
+  const next = BADGES.find(b => b.at > me.stars);
   const now = cur ? cur.name : '🐣 התואר הראשון מחכה לך';
-  return next ? `${now} · עוד ${next.at - data.stars} כוכבים עד ${next.name}` : now;
+  return next ? `${now} · עוד ${next.at - me.stars} כוכבים עד ${next.name}` : now;
 }
 
 // ===================================================================
 // מסכים
 // ===================================================================
+// מסך בחירת חשבון
+function accountsScreen(){
+  me = null;
+  view(
+    h('h1', {textContent:'מי לומד היום? 👋'}),
+    ...store.accounts.map(a => big('👤', a.name, `כיתה ${gradeName(a.grade)} · ⭐ ${a.stars} כוכבים`, () => login(a))),
+    store.accounts.length ? null : h('p', {className:'center', textContent:'עוד אין חשבונות. בוא ניצור אחד!'}),
+    h('button', {className:'btn', textContent:'➕ חשבון חדש', onclick:newAccount}),
+  );
+}
+
+function login(a){
+  const pin = h('input', {type:'password', inputMode:'numeric', maxLength:4, placeholder:'קוד סודי (4 ספרות)', className:'pin'});
+  const msg = h('p', {className:'msg'});
+  const go = () => {
+    if(pin.value === a.pin){
+      me = a;
+      home();
+    }else{
+      msg.textContent = '🤔 הקוד לא נכון, נסה שוב';
+      pin.value = '';
+      pin.classList.add('shake');
+      setTimeout(() => pin.classList.remove('shake'), 400);
+    }
+  };
+  pin.onkeydown = e => { if(e.key === 'Enter') go(); };
+  view(
+    h('button', {className:'btn alt', textContent:'⬅ חזרה', onclick:accountsScreen}),
+    h('h1', {textContent:`היי ${a.name}!`}),
+    h('div', {className:'card'},
+      h('p', {textContent:'הקלד את הקוד הסודי שלך'}),
+      pin,
+      h('button', {className:'btn', textContent:'כניסה ✨', onclick:go}),
+      msg),
+  );
+  pin.focus();
+}
+
+function newAccount(){
+  const name = h('input', {placeholder:'שם', maxLength:20, className:'pin'});
+  const pin = h('input', {type:'password', inputMode:'numeric', maxLength:4, placeholder:'קוד סודי (4 ספרות)', className:'pin'});
+  const msg = h('p', {className:'msg'});
+  let chosen = null;
+  const create = () => {
+    const n = name.value.trim();
+    if(!chosen){ msg.textContent = 'בחר/י כיתה'; return; }
+    if(!n){ msg.textContent = 'צריך לכתוב שם'; return; }
+    if(!/^\d{4}$/.test(pin.value)){ msg.textContent = 'הקוד צריך להיות 4 ספרות'; return; }
+    if(store.accounts.some(a => a.name === n)){ msg.textContent = 'כבר יש חשבון בשם הזה'; return; }
+    const a = {id:Date.now().toString(36), name:n, grade:chosen, pin:pin.value, stars:0, rounds:0, missed:{}};
+    store.accounts.push(a);
+    save();
+    me = a;
+    home();
+  };
+  view(
+    h('button', {className:'btn alt', textContent:'⬅ חזרה', onclick:accountsScreen}),
+    h('h1', {textContent:'חשבון חדש ✨'}),
+    h('div', {className:'card'},
+      h('p', {textContent:'שם הילד/ה'}),
+      name,
+      h('p', {textContent:'באיזו כיתה?'}),
+      gradePicker(null, n => { chosen = n; }),
+      h('p', {textContent:'קוד סודי (4 ספרות). שמרו אותו, הוא נדרש בכל כניסה'}),
+      pin,
+      h('button', {className:'btn', textContent:'צור חשבון', onclick:create}),
+      msg),
+  );
+  name.focus();
+}
+
+function gradePicker(current, onPick){
+  const btns = GRADES.map(g => h('button', {className:'grade' + (g.n === current ? ' on' : ''), textContent:g.name, onclick:() => {
+    btns.forEach(b => b.classList.remove('on'));
+    btns[g.n - 1].classList.add('on');
+    onPick(g.n);
+  }}));
+  return h('div', {className:'grades'}, btns);
+}
+
+function changeGrade(){
+  view(
+    h('button', {className:'btn alt', textContent:'⬅ חזרה', onclick:home}),
+    h('h1', {textContent:'באיזו כיתה?'}),
+    gradePicker(me.grade, n => { me.grade = n; save(); home(); }),
+  );
+}
+
 function home(){
   round = null;
+  if(!me) return accountsScreen();
   view(
-    h('h1', {textContent:'שלום! בוא נתגבר ✨'}),
+    h('h1', {textContent:`שלום ${me.name}! בוא נתגבר ✨`}),
     h('div', {className:'card center'},
-      h('p', {className:'stars', textContent:`⭐ ${data.stars} כוכבים`}),
+      h('p', {className:'stars', textContent:`⭐ ${me.stars} כוכבים`}),
       h('p', {textContent:badgeText()})),
     big('🇬🇧', 'אנגלית', 'לשמוע, לכתוב ולהשלים משפטים', () => startRound('en')),
     big('📜', 'תנ״ך', 'סיפורים ושאלות', () => startRound('tanakh')),
     big('👨‍👩‍👧', 'למבוגרים', 'התקדמות ומילים לחזרה', parents),
+    h('button', {className:'btn alt', textContent:`🎓 כיתה ${gradeName(me.grade)} (שינוי)`, onclick:changeGrade}),
+    h('button', {className:'btn alt', textContent:'🔄 החלף חשבון', onclick:accountsScreen}),
   );
 }
 
 function parents(){
-  const missed = Object.values(data.missed).sort((a, b) => b.n - a.n);
+  const missed = Object.values(me.missed).sort((a, b) => b.n - a.n);
   view(
     h('button', {className:'btn alt', textContent:'⬅ חזרה', onclick:home}),
     h('h1', {textContent:'למבוגרים 👨‍👩‍👧'}),
     h('div', {className:'card'},
-      h('p', {textContent:`⭐ כוכבים: ${data.stars}`}),
-      h('p', {textContent:`🏁 סיבובים שהושלמו: ${data.rounds}`})),
+      h('p', {textContent:`⭐ כוכבים: ${me.stars}`}),
+      h('p', {textContent:`🏁 סיבובים שהושלמו: ${me.rounds}`})),
     h('div', {className:'card'},
       h('h2', {textContent:'לחזרה בבית'}),
       missed.length
@@ -223,8 +328,8 @@ function parents(){
     h('div', {className:'card'},
       h('p', {textContent:'להוספת מילים, משפטים או סיפורים: פותחים את הקובץ index.html ומעדכנים את המערכים WORDS, SENTENCES ו-BIBLE בתחילת הקוד.'})),
     h('button', {className:'btn alt', textContent:'איפוס התקדמות', onclick:() => {
-      if(confirm('למחוק את כל ההתקדמות?')){
-        data = {stars:0, rounds:0, missed:{}};
+      if(confirm(`למחוק את כל ההתקדמות של ${me.name}?`)){
+        Object.assign(me, {stars:0, rounds:0, missed:{}});
         save();
         home();
       }
@@ -238,9 +343,20 @@ function parents(){
 let round = null;
 
 function startRound(subject){
-  const items = subject === 'en' ? englishRound() : tanakhRound();
+  const items = subject === 'en' ? englishRound(me.grade) : tanakhRound(me.grade);
+  if(!items) return noContent(subject);
   round = {subject, items, i:0, stars:0};
   showItem();
+}
+
+function noContent(subject){
+  const name = subject === 'en' ? 'באנגלית' : 'בתנ״ך';
+  view(
+    h('button', {className:'btn alt', textContent:'⬅ חזרה לתפריט', onclick:home}),
+    h('div', {className:'card center'},
+      h('h2', {textContent:`עוד אין תוכן ${name} לכיתה ${gradeName(me.grade)}`}),
+      h('p', {textContent:'התוכן לכיתה הזו יתווסף בהמשך.'})),
+  );
 }
 
 function showItem(){
@@ -259,13 +375,13 @@ function showItem(){
 
   const next = firstTry => {
     if(firstTry){
-      data.stars++;
+      me.stars++;
       r.stars++;
-      delete data.missed[item.key];
+      delete me.missed[item.key];
     }else{
-      const m = data.missed[item.key] || {label:item.label, n:0};
+      const m = me.missed[item.key] || {label:item.label, n:0};
       m.n++;
-      data.missed[item.key] = m;
+      me.missed[item.key] = m;
     }
     save();
     box.append(h('p', {className:'msg pop', textContent: firstTry ? '⭐ מעולה! +1 כוכב' : '💪 בסדר, לומדים מזה!'}));
@@ -284,7 +400,7 @@ function showItem(){
 function finish(){
   const r = round;
   round = null;
-  data.rounds++;
+  me.rounds++;
   save();
   view(
     h('div', {className:'card center'},
@@ -369,7 +485,7 @@ function listenItem(box, item, done){
       h('button', {className:'speak', textContent:'🔊 שמע שוב', onclick:() => say(w.en)})),
   );
   setTimeout(() => say(w.en), 300);
-  const options = shuffle([w, ...shuffle(WORDS.filter(x => x !== w)).slice(0, 2)])
+  const options = shuffle([w, ...shuffle(item.pool.filter(x => x !== w)).slice(0, 2)])
     .map(x => ({v:x.en, label:`${x.emoji} ${x.he}`}));
   choose(box, options, w.en, done);
 }
@@ -478,21 +594,25 @@ function bibleItem(box, item, done){
 // ===================================================================
 // בניית סיבובים
 // ===================================================================
-function englishRound(){
-  const w = shuffle(WORDS);
-  const sent = shuffle(SENTENCES)[0];
+function englishRound(grade){
+  const c = CONTENT.en[grade];
+  if(!c) return null;
+  const w = shuffle(c.words);
+  const sent = shuffle(c.sentences)[0];
   const items = [
-    {kind:'listen', key:w[0].en, label:w[0].en, word:w[0]},
-    {kind:'listen', key:w[1].en, label:w[1].en, word:w[1]},
+    {kind:'listen', key:w[0].en, label:w[0].en, word:w[0], pool:c.words},
+    {kind:'listen', key:w[1].en, label:w[1].en, word:w[1], pool:c.words},
     {kind:'spell',  key:w[2].en, label:w[2].en, word:w[2]},
     {kind:'spell',  key:w[3].en, label:w[3].en, word:w[3]},
-    {kind:'sentence', key:'s:' + SENTENCES.indexOf(sent), label:sent.s, ...sent},
+    {kind:'sentence', key:'s:' + c.sentences.indexOf(sent), label:sent.s, ...sent},
   ];
   return shuffle(items);
 }
 
-function tanakhRound(){
-  return shuffle(BIBLE).slice(0, 5).map(b => ({kind:'bible', key:'t:' + b.title, label:b.title, b}));
+function tanakhRound(grade){
+  const c = CONTENT.tanakh[grade];
+  if(!c) return null;
+  return shuffle(c.stories).slice(0, 5).map(b => ({kind:'bible', key:'t:' + b.title, label:b.title, b}));
 }
 
 // ===================================================================

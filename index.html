@@ -81,11 +81,38 @@ body {
   font-size: 0.9rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .share {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.rec-audio {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.btn-record.is-recording {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+a.chip {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .chips {
@@ -394,6 +421,17 @@ textarea:focus {
     <ul class="phrase-list" id="phrase-list"></ul>
   </section>
 
+  <section class="card">
+    <h2 data-i18n="recordTitle">Запись</h2>
+    <p class="hint" data-i18n="recordHint">Запишите свою фразу, прослушайте и отправьте файлом.</p>
+    <button type="button" id="record-btn" class="btn btn-secondary btn-record" data-i18n="record">● Записать</button>
+    <audio id="rec-audio" class="rec-audio" controls hidden></audio>
+    <div class="share">
+      <button type="button" id="share-audio" class="chip" data-i18n="shareAudio" hidden>Поделиться записью</button>
+      <a id="rec-download" class="chip" data-i18n="download" hidden>Скачать запись</a>
+    </div>
+  </section>
+
   <p class="footer-note" data-i18n="footer"></p>
 </main>
 
@@ -422,6 +460,13 @@ const UI = {
     copy: 'Копировать',
     copied: 'Скопировано',
     copyError: 'Не удалось скопировать',
+    recordTitle: 'Запись',
+    recordHint: 'Запишите свою фразу, прослушайте и отправьте файлом.',
+    record: '● Записать',
+    stopRecord: '■ Остановить запись',
+    shareAudio: 'Поделиться записью',
+    download: 'Скачать запись',
+    recordUnsupported: 'Запись не поддерживается этим браузером.',
     uiLang: 'Язык интерфейса',
     inputLabel: 'Язык ввода',
     outputLabel: 'Язык перевода',
@@ -458,6 +503,13 @@ const UI = {
     copy: 'Copiar',
     copied: 'Copiado',
     copyError: 'No se pudo copiar',
+    recordTitle: 'Grabación',
+    recordHint: 'Grabe su frase, escúchela y envíela como archivo.',
+    record: '● Grabar',
+    stopRecord: '■ Parar grabación',
+    shareAudio: 'Compartir grabación',
+    download: 'Descargar grabación',
+    recordUnsupported: 'Este navegador no admite grabación.',
     uiLang: 'Idioma de la aplicación',
     inputLabel: 'Idioma de entrada',
     outputLabel: 'Idioma de traducción',
@@ -494,6 +546,13 @@ const UI = {
     copy: 'העתק',
     copied: 'הועתק',
     copyError: 'ההעתקה נכשלה',
+    recordTitle: 'הקלטה',
+    recordHint: 'הקליטו את המשפט, השמיעו אותו ושלחו כקובץ.',
+    record: '● הקלט',
+    stopRecord: '■ עצור הקלטה',
+    shareAudio: 'שתף הקלטה',
+    download: 'הורד הקלטה',
+    recordUnsupported: 'הדפדפן הזה לא תומך בהקלטה.',
     uiLang: 'שפת הממשק',
     inputLabel: 'שפת קלט',
     outputLabel: 'שפת תרגום',
@@ -595,6 +654,10 @@ const el = {
   shareWa: document.getElementById('share-wa'),
   shareMail: document.getElementById('share-mail'),
   shareCopy: document.getElementById('share-copy'),
+  recordBtn: document.getElementById('record-btn'),
+  recAudio: document.getElementById('rec-audio'),
+  shareAudio: document.getElementById('share-audio'),
+  recDownload: document.getElementById('rec-download'),
   status: document.getElementById('status'),
   filters: document.getElementById('filters'),
   phraseList: document.getElementById('phrase-list'),
@@ -756,6 +819,7 @@ function applyUI() {
   renderFilters();
   renderPhrases();
   updateMicLabel();
+  updateRecordButton();
 }
 
 // Меняет языки. Если сменился язык ввода, старый текст очищается.
@@ -850,6 +914,92 @@ async function copyText() {
   } catch (error) {
     setStatus(t('copyError'));
   }
+}
+
+// Запись речи в аудиофайл средствами браузера, без облачных сервисов.
+const rec = {
+  recorder: null,
+  chunks: [],
+  blob: null,
+  url: null,
+  ext: 'webm',
+};
+
+function recordingFile() {
+  return new File([rec.blob], `minkin-${Date.now()}.${rec.ext}`, { type: rec.blob.type });
+}
+
+function canShareRecording() {
+  try {
+    return Boolean(rec.blob) && Boolean(navigator.canShare) && navigator.canShare({ files: [recordingFile()] });
+  } catch (error) {
+    return false;
+  }
+}
+
+function updateRecordButton() {
+  el.recordBtn.textContent = rec.recorder ? t('stopRecord') : t('record');
+  el.recordBtn.classList.toggle('is-recording', Boolean(rec.recorder));
+}
+
+function showRecording() {
+  el.recAudio.src = rec.url;
+  el.recAudio.hidden = false;
+  el.recDownload.href = rec.url;
+  el.recDownload.download = `minkin-${Date.now()}.${rec.ext}`;
+  el.recDownload.hidden = false;
+  el.shareAudio.hidden = !canShareRecording();
+}
+
+async function shareRecording() {
+  try {
+    await navigator.share({ title: 'Minkin', files: [recordingFile()] });
+  } catch (error) {
+    if (error.name !== 'AbortError') setStatus(error.message);
+  }
+}
+
+async function toggleRecord() {
+  if (rec.recorder) {
+    rec.recorder.stop();
+    return;
+  }
+  if (!window.MediaRecorder || !navigator.mediaDevices) {
+    setStatus(t('recordUnsupported'));
+    return;
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (error) {
+    setStatus(t('micNotAllowed'));
+    return;
+  }
+
+  const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+    .find((type) => MediaRecorder.isTypeSupported(type)) || '';
+  const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  const type = (recorder.mimeType || mime || 'audio/webm').split(';')[0];
+
+  rec.chunks = [];
+  recorder.ondataavailable = (event) => {
+    if (event.data.size) rec.chunks.push(event.data);
+  };
+  recorder.onstop = () => {
+    stream.getTracks().forEach((track) => track.stop());
+    if (rec.url) URL.revokeObjectURL(rec.url);
+    rec.blob = new Blob(rec.chunks, { type });
+    rec.url = URL.createObjectURL(rec.blob);
+    rec.ext = type.includes('mp4') ? 'm4a' : 'webm';
+    rec.recorder = null;
+    updateRecordButton();
+    showRecording();
+  };
+
+  rec.recorder = recorder;
+  recorder.start();
+  updateRecordButton();
 }
 
 function speak(text, lang) {
@@ -981,6 +1131,8 @@ el.shareWa.addEventListener('click', shareWhatsApp);
 el.shareMail.addEventListener('click', shareEmail);
 el.shareCopy.addEventListener('click', copyText);
 if (!navigator.share) el.shareNative.hidden = true;
+el.recordBtn.addEventListener('click', toggleRecord);
+el.shareAudio.addEventListener('click', shareRecording);
 el.swapBtn.addEventListener('click', swapLanguages);
 el.sourceText.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {

@@ -406,8 +406,6 @@ textarea:focus {
       <button type="button" id="play-btn" class="btn btn-primary" data-i18n="play">▶ Воспроизвести</button>
       <div class="share">
         <button type="button" id="share-native" class="chip" data-i18n="share">Поделиться</button>
-        <button type="button" id="share-wa" class="chip">WhatsApp</button>
-        <button type="button" id="share-mail" class="chip" data-i18n="email">Email</button>
         <button type="button" id="share-copy" class="chip" data-i18n="copy">Копировать</button>
       </div>
     </div>
@@ -456,7 +454,6 @@ const UI = {
     appTitle: 'Minkin · Переводчик',
     tagline: 'Звук на звук',
     share: 'Поделиться',
-    email: 'Email',
     copy: 'Копировать',
     copied: 'Скопировано',
     copyError: 'Не удалось скопировать',
@@ -499,7 +496,6 @@ const UI = {
     appTitle: 'Minkin · Traductor',
     tagline: 'Sonido a sonido',
     share: 'Compartir',
-    email: 'Correo',
     copy: 'Copiar',
     copied: 'Copiado',
     copyError: 'No se pudo copiar',
@@ -542,7 +538,6 @@ const UI = {
     appTitle: 'Minkin · מתרגם',
     tagline: 'קול לקול',
     share: 'שתף',
-    email: 'אימייל',
     copy: 'העתק',
     copied: 'הועתק',
     copyError: 'ההעתקה נכשלה',
@@ -651,8 +646,6 @@ const el = {
   resultTarget: document.getElementById('result-target'),
   playBtn: document.getElementById('play-btn'),
   shareNative: document.getElementById('share-native'),
-  shareWa: document.getElementById('share-wa'),
-  shareMail: document.getElementById('share-mail'),
   shareCopy: document.getElementById('share-copy'),
   recordBtn: document.getElementById('record-btn'),
   recAudio: document.getElementById('rec-audio'),
@@ -899,14 +892,6 @@ async function shareNative() {
   }
 }
 
-function shareWhatsApp() {
-  window.open(`https://wa.me/?text=${encodeURIComponent(shareText())}`, '_blank', 'noopener');
-}
-
-function shareEmail() {
-  location.href = `mailto:?subject=${encodeURIComponent('Minkin')}&body=${encodeURIComponent(shareText())}`;
-}
-
 async function copyText() {
   try {
     await navigator.clipboard.writeText(shareText());
@@ -1127,8 +1112,6 @@ el.mic.addEventListener('click', toggleMic);
 el.translateBtn.addEventListener('click', translate);
 el.playBtn.addEventListener('click', () => speak(el.resultTarget.textContent, state.target));
 el.shareNative.addEventListener('click', shareNative);
-el.shareWa.addEventListener('click', shareWhatsApp);
-el.shareMail.addEventListener('click', shareEmail);
 el.shareCopy.addEventListener('click', copyText);
 if (!navigator.share) el.shareNative.hidden = true;
 el.recordBtn.addEventListener('click', toggleRecord);

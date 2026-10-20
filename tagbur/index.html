@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>תגבור - אנגלית ותנ״ך</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fdf6e3;--ink:#222;--muted:#666;--line:#e4dccb;--blue:#2f6fdd;--green:#2e9e5b;--orange:#e0883a;--gold:#f5b400}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.75 Heebo,system-ui,sans-serif}
+#app{max-width:640px;margin:0 auto;padding:16px 16px 48px}
+h1{font-size:30px;font-weight:900;margin:12px 0 8px;line-height:1.3}
+h2{font-size:24px;font-weight:900;margin:8px 0}
+p{margin:8px 0}
+.center{text-align:center}
+.card{background:#fff;border:2px solid var(--line);border-radius:20px;padding:18px 20px;margin:14px 0;box-shadow:0 4px 0 var(--line)}
+.stars{font-size:26px;font-weight:900;color:#b07a00;margin:0}
+.big{display:flex;align-items:center;gap:16px;width:100%;text-align:right;background:#fff;color:inherit;font:inherit;border:3px solid var(--line);border-radius:22px;padding:18px 20px;margin:14px 0;cursor:pointer;box-shadow:0 5px 0 var(--line);min-height:88px}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--line)}
+.big .ic{font-size:44px;line-height:1}
+.big b{font-size:24px;display:block}
+.big small{color:var(--muted);font-size:17px}
+.btn{font:inherit;font-weight:700;font-size:22px;min-height:58px;padding:12px 22px;border:0;border-radius:18px;background:var(--blue);color:#fff;cursor:pointer;box-shadow:0 4px 0 #1d4fb0;margin:8px 0;width:100%}
+.btn.alt{background:#fff;color:var(--blue);border:3px solid var(--blue);box-shadow:none}
+.btn:active{transform:translateY(2px)}
+.speak{font:inherit;font-size:22px;font-weight:700;background:#fff3c4;color:var(--ink);border:3px solid var(--gold);border-radius:999px;padding:10px 20px;cursor:pointer;margin:6px 0;min-height:52px}
+.en{font-family:'Atkinson Hyperlegible',Heebo,sans-serif;direction:ltr;letter-spacing:.05em}
+.progress{display:flex;gap:8px;margin:6px 0 4px}
+.progress span{flex:1;height:14px;border-radius:8px;background:var(--line)}
+.progress span.done{background:var(--green)}
+.progress span.now{background:var(--gold)}
+.count{color:var(--muted);font-size:17px;margin:0 0 10px}
+.big-word{font-size:56px;text-align:center;margin:10px 0;line-height:1.2}
+.prompt{font-size:22px;font-weight:700;text-align:center;margin:10px 0}
+.sentence{font-size:28px;font-weight:700;text-align:center;direction:ltr;font-family:'Atkinson Hyperlegible',Heebo,sans-serif;margin:12px 0}
+.choices{display:grid;gap:12px;margin-top:14px}
+.choice{font:inherit;font-size:22px;min-height:66px;padding:12px 14px;border-radius:18px;border:3px solid #cfc6b2;background:#fff;color:var(--ink);cursor:pointer}
+.choice.ok{background:#d9f5e3;border-color:var(--green)}
+.choice.nope{background:#fde7d3;border-color:var(--orange);opacity:.6}
+.choice:disabled{cursor:default}
+.msg{min-height:38px;font-size:24px;font-weight:700;text-align:center;margin:10px 0 0}
+.hint{font-size:20px;color:var(--muted);text-align:center;margin:6px 0 0;min-height:30px}
+.slots{display:flex;gap:6px;justify-content:center;direction:ltr;flex-wrap:wrap;margin:14px 0}
+.slot{width:54px;height:66px;border-bottom:4px solid var(--ink);font:700 38px 'Atkinson Hyperlegible',sans-serif;display:flex;align-items:center;justify-content:center}
+.tiles{display:flex;gap:10px;justify-content:center;direction:ltr;flex-wrap:wrap;margin-top:12px}
+.tile{width:62px;height:62px;border-radius:16px;border:0;background:#c9e0ff;font:700 32px 'Atkinson Hyperlegible',sans-serif;cursor:pointer;box-shadow:0 4px 0 #8fb6ea;color:var(--ink)}
+.tile:disabled{visibility:hidden}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.row .speak,.row .btn{width:auto;margin:6px 0}
+.story{font-size:22px;line-height:2;background:#f3f8ff;border-radius:16px;padding:14px 18px;margin:10px 0}
+.shake{animation:shake .4s}
+.pop{animation:pop .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+ul{padding-right:22px}
+li{margin:6px 0}
+@media (prefers-reduced-motion:reduce){.shake,.pop{animation:none}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+// ===================================================================
+// תוכן - אפשר להוסיף או לשנות כאן מילים, משפטים וסיפורים
+// ===================================================================
+const WORDS = [
+  {en:'dog', he:'כלב', emoji:'🐶'},
+  {en:'cat', he:'חתול', emoji:'🐱'},
+  {en:'apple', he:'תפוח', emoji:'🍎'},
+  {en:'banana', he:'בננה', emoji:'🍌'},
+  {en:'school', he:'בית ספר', emoji:'🏫'},
+  {en:'book', he:'ספר', emoji:'📖'},
+  {en:'sun', he:'שמש', emoji:'☀️'},
+  {en:'rain', he:'גשם', emoji:'🌧️'},
+  {en:'house', he:'בית', emoji:'🏠'},
+  {en:'water', he:'מים', emoji:'💧'},
+  {en:'tree', he:'עץ', emoji:'🌳'},
+  {en:'bird', he:'ציפור', emoji:'🐦'},
+  {en:'fish', he:'דג', emoji:'🐟'},
+  {en:'horse', he:'סוס', emoji:'🐴'},
+  {en:'friend', he:'חבר', emoji:'👫'},
+  {en:'happy', he:'שמח', emoji:'😊'},
+];
+
+const SENTENCES = [
+  {s:'I ___ an apple every day.', opts:['eat','eats','eating'], a:'eat', he:'אני אוכל תפוח כל יום.'},
+  {s:'She ___ to school by bus.', opts:['go','goes','going'], a:'goes', he:'היא נוסעת לבית הספר באוטובוס.'},
+  {s:'They ___ playing football now.', opts:['is','are','am'], a:'are', he:'הם משחקים כדורגל עכשיו.'},
+  {s:'My dog ___ very big.', opts:['is','are','am'], a:'is', he:'הכלב שלי גדול מאוד.'},
+  {s:'The cat is ___ the table.', opts:['under','happy','blue'], a:'under', he:'החתול נמצא מתחת לשולחן.'},
+  {s:'Yesterday I ___ a book.', opts:['read','reads','reading'], a:'read', he:'אתמול קראתי ספר.'},
+  {s:'He ___ a bike.', opts:['has','have','having'], a:'has', he:'יש לו אופניים.'},
+];
+
+const BIBLE = [
+  {title:'בריאת העולם', emoji:'🌍',
+   text:'אלוהים ברא את העולם בשישה ימים. בכל יום ברא דברים חדשים: אור, שמיים, צמחים, שמש וירח, בעלי חיים ואדם. ביום השביעי אלוהים שבת ונח.',
+   q:'כמה ימים ברא אלוהים את העולם?', opts:['שישה','שבעה','עשרה'], a:'שישה'},
+  {title:'נח והתיבה', emoji:'🚢',
+   text:'אלוהים ביקש מנח לבנות תיבה גדולה. נח הכניס לתיבה זוג מכל בעל חיים. אחרי המבול יצאה יונה ומצאה עלה זית, וזה אמר שהמים ירדו. אלוהים שם קשת בשמיים כסימן.',
+   q:'איזו ציפור חזרה לנח עם עלה זית בפה?', opts:['יונה','ינשוף','תרנגולת'], a:'יונה'},
+  {title:'יוסף וכתונת הפסים', emoji:'🧥',
+   text:'יעקב, אביו של יוסף, אהב אותו יותר מכל ילדיו, ונתן לו כתונת מיוחדת. האחים קינאו בו, ומכרו אותו לסוחרים שהביאו אותו למצרים. שם יוסף הפך לאדם חשוב.',
+   q:'מה היה מיוחד בכתונת של יוסף?', opts:['הייתה צבעונית עם פסים','הייתה שחורה לגמרי','הייתה קטנה מאוד'], a:'הייתה צבעונית עם פסים'},
+  {title:'משה בתיבת הגומא', emoji:'👶',
+   text:'פרעה, מלך מצרים, ציווה להרוג את הבנים של בני ישראל. אמא של משה שמה אותו בתיבה קטנה מגומא ליד היאור. בת פרעה מצאה אותו, והחליטה לגדל אותו כבנה.',
+   q:'איפה שמו את משה התינוק?', opts:['בתיבה קטנה ליד היאור','בתוך בית גדול','על הר גבוה'], a:'בתיבה קטנה ליד היאור'},
+  {title:'דוד וגלית', emoji:'🪨',
+   text:'גלית היה לוחם ענק מהפלשתים, והוא אתגר את ישראל. דוד, נער צעיר שרעה צאן, יצא נגדו עם קלע וחמישה חלוקי נחל. דוד הטיל את האבן ופגע בגלית.',
+   q:'באיזה נשק השתמש דוד?', opts:['קלע וחלוקי נחל','חרב ומגן','קשת וחצים'], a:'קלע וחלוקי נחל'},
+  {title:'עשרת הדיברות', emoji:'📜',
+   text:'משה עלה להר סיני, ושם קיבל מאלוהים את עשרת הדיברות. הדיברות נכתבו על שני לוחות אבן. בהם כללים חשובים, כמו לכבד את אבא ואמא ולא לגנוב.',
+   q:'איפה משה קיבל את עשרת הדיברות?', opts:['בהר סיני','בחוף הים','במצרים'], a:'בהר סיני'},
+];
+
+const BREAKS = [
+  'קום ועשה 10 קפיצות 🤸',
+  'מתח ידיים גבוה וזוז קצת 🙆',
+  'הסתובב בחדר שלוש פעמים 🚶',
+  'שתה כוס מים 💧',
+  'צא לדקה לאוויר 🌬️',
+];
+
+const BADGES = [
+  {at:5,  name:'🌱 צמח צעיר'},
+  {at:15, name:'🚀 טייס חלל'},
+  {at:30, name:'🏆 אלוף'},
+  {at:60, name:'👑 מלך התגבור'},
+];
+
+// ===================================================================
+// שמירת התקדמות (רק בדפדפן של המכשיר הזה)
+// ===================================================================
+const KEY = 'tagbur-v1';
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+
+function load(){
+  try{
+    return {stars:0, rounds:0, missed:{}, ...JSON.parse(localStorage.getItem(KEY) || '{}')};
+  }catch{
+    return {stars:0, rounds:0, missed:{}};
+  }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch{}
+}
+let data = load();
+
+// ===================================================================
+// עזרים
+// ===================================================================
+function h(tag, props, ...kids){
+  const e = Object.assign(document.createElement(tag), props || {});
+  e.append(...kids.flat().filter(k => k != null));
+  return e;
+}
+function shuffle(arr){
+  const a = [...arr];
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.random() * (i + 1) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function say(text, lang = 'en-US'){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+  u.rate = 0.8;
+  speechSynthesis.speak(u);
+}
+const app = document.querySelector('#app');
+function view(...nodes){
+  app.replaceChildren(...nodes);
+  window.scrollTo(0, 0);
+}
+function big(icon, title, sub, onclick){
+  return h('button', {className:'big', onclick},
+    h('span', {className:'ic', textContent:icon}),
+    h('span', {}, h('b', {textContent:title}), h('small', {textContent:sub})));
+}
+function badgeText(){
+  const cur = BADGES.filter(b => data.stars >= b.at).pop();
+  const next = BADGES.find(b => b.at > data.stars);
+  const now = cur ? cur.name : '🐣 התואר הראשון מחכה לך';
+  return next ? `${now} · עוד ${next.at - data.stars} כוכבים עד ${next.name}` : now;
+}
+
+// ===================================================================
+// מסכים
+// ===================================================================
+function home(){
+  round = null;
+  view(
+    h('h1', {textContent:'שלום! בוא נתגבר ✨'}),
+    h('div', {className:'card center'},
+      h('p', {className:'stars', textContent:`⭐ ${data.stars} כוכבים`}),
+      h('p', {textContent:badgeText()})),
+    big('🇬🇧', 'אנגלית', 'לשמוע, לכתוב ולהשלים משפטים', () => startRound('en')),
+    big('📜', 'תנ״ך', 'סיפורים ושאלות', () => startRound('tanakh')),
+    big('👨‍👩‍👧', 'למבוגרים', 'התקדמות ומילים לחזרה', parents),
+  );
+}
+
+function parents(){
+  const missed = Object.values(data.missed).sort((a, b) => b.n - a.n);
+  view(
+    h('button', {className:'btn alt', textContent:'⬅ חזרה', onclick:home}),
+    h('h1', {textContent:'למבוגרים 👨‍👩‍👧'}),
+    h('div', {className:'card'},
+      h('p', {textContent:`⭐ כוכבים: ${data.stars}`}),
+      h('p', {textContent:`🏁 סיבובים שהושלמו: ${data.rounds}`})),
+    h('div', {className:'card'},
+      h('h2', {textContent:'לחזרה בבית'}),
+      missed.length
+        ? h('ul', {}, missed.map(m => h('li', {textContent:`${m.label} (טעויות: ${m.n})`})))
+        : h('p', {textContent:'אין כרגע מילים לחזרה. מעולה! 🎉'})),
+    h('div', {className:'card'},
+      h('p', {textContent:'להוספת מילים, משפטים או סיפורים: פותחים את הקובץ index.html ומעדכנים את המערכים WORDS, SENTENCES ו-BIBLE בתחילת הקוד.'})),
+    h('button', {className:'btn alt', textContent:'איפוס התקדמות', onclick:() => {
+      if(confirm('למחוק את כל ההתקדמות?')){
+        data = {stars:0, rounds:0, missed:{}};
+        save();
+        home();
+      }
+    }}),
+  );
+}
+
+// ===================================================================
+// סיבוב: 5 שאלות, כוכב על כל תשובה נכונה מהניסיון הראשון
+// ===================================================================
+let round = null;
+
+function startRound(subject){
+  const items = subject === 'en' ? englishRound() : tanakhRound();
+  round = {subject, items, i:0, stars:0};
+  showItem();
+}
+
+function showItem(){
+  const r = round;
+  if(r.i >= r.items.length) return finish();
+
+  const item = r.items[r.i];
+  const box = h('div', {className:'card'});
+  view(
+    h('button', {className:'btn alt', textContent:'⬅ יציאה לתפריט', onclick:home}),
+    h('p', {className:'count', textContent:`שאלה ${r.i + 1} מתוך ${r.items.length}`}),
+    h('div', {className:'progress'}, r.items.map((_, k) =>
+      h('span', {className: k < r.i ? 'done' : k === r.i ? 'now' : ''}))),
+    box,
+  );
+
+  const next = firstTry => {
+    if(firstTry){
+      data.stars++;
+      r.stars++;
+      delete data.missed[item.key];
+    }else{
+      const m = data.missed[item.key] || {label:item.label, n:0};
+      m.n++;
+      data.missed[item.key] = m;
+    }
+    save();
+    box.append(h('p', {className:'msg pop', textContent: firstTry ? '⭐ מעולה! +1 כוכב' : '💪 בסדר, לומדים מזה!'}));
+    setTimeout(() => {
+      if(round === r){
+        r.i++;
+        showItem();
+      }
+    }, firstTry ? 900 : 1600);
+  };
+
+  const renderers = {listen:listenItem, spell:spellItem, sentence:sentenceItem, bible:bibleItem};
+  renderers[item.kind](box, item, next);
+}
+
+function finish(){
+  const r = round;
+  round = null;
+  data.rounds++;
+  save();
+  view(
+    h('div', {className:'card center'},
+      h('h1', {textContent:'סיבוב גמור! 🎉'}),
+      h('p', {className:'stars', textContent:`קיבלת ${r.stars} כוכבים מתוך ${r.items.length}`}),
+      h('p', {textContent:badgeText()})),
+    breakCard(),
+    h('button', {className:'btn', textContent:'עוד סיבוב 🚀', onclick:() => startRound(r.subject)}),
+    h('button', {className:'btn alt', textContent:'לתפריט', onclick:home}),
+  );
+}
+
+function breakCard(){
+  const out = h('p', {className:'center', textContent:'דקה אחת, ואז חוזרים 💪'});
+  let secs = 60;
+  let timer = null;
+  const start = h('button', {className:'speak', textContent:'⏱️ התחל דקת הפסקה', onclick() {
+    this.disabled = true;
+    out.textContent = `נשארו ${secs} שניות`;
+    timer = setInterval(() => {
+      secs--;
+      out.textContent = secs > 0 ? `נשארו ${secs} שניות` : 'נגמרה ההפסקה! מוכנים? 💪';
+      if(secs <= 0) clearInterval(timer);
+    }, 1000);
+  }});
+  return h('div', {className:'card center'},
+    h('h2', {textContent:'הפסקת תנועה'}),
+    h('p', {textContent:pick(BREAKS)}),
+    start,
+    out);
+}
+
+const pick = a => a[Math.random() * a.length | 0];
+
+// ===================================================================
+// סוגי שאלות
+// ===================================================================
+
+// בחירה מתוך כמה כפתורים. מחזיר done(firstTry) כשנגמר.
+function choose(box, options, correct, done){
+  let misses = 0, finished = false;
+  const msg = h('p', {className:'msg'});
+  const buttons = options.map(o => {
+    const b = h('button', {className:'choice', textContent:o.label});
+    b.onclick = () => {
+      if(finished || b.disabled) return;
+      if(o.v === correct){
+        b.classList.add('ok');
+        end(misses === 0);
+      }else{
+        misses++;
+        b.classList.add('nope');
+        b.disabled = true;
+        if(misses < 2){
+          msg.textContent = '🤔 כמעט! נסה שוב';
+        }else{
+          msg.textContent = '👀 התשובה הנכונה מסומנת בירוק';
+          end(false);
+        }
+      }
+    };
+    return {b, v:o.v};
+  });
+  const end = first => {
+    finished = true;
+    buttons.forEach(x => {
+      x.b.disabled = true;
+      if(x.v === correct) x.b.classList.add('ok');
+    });
+    done(first);
+  };
+  box.append(h('div', {className:'choices'}, buttons.map(x => x.b)), msg);
+}
+
+// שמיעת מילה באנגלית ובחירת המשמעות בעברית
+function listenItem(box, item, done){
+  const w = item.word;
+  box.append(
+    h('p', {className:'big-word en', textContent:w.en}),
+    h('p', {className:'prompt', textContent:'מה זה בעברית?'}),
+    h('div', {className:'center'},
+      h('button', {className:'speak', textContent:'🔊 שמע שוב', onclick:() => say(w.en)})),
+  );
+  setTimeout(() => say(w.en), 300);
+  const options = shuffle([w, ...shuffle(WORDS.filter(x => x !== w)).slice(0, 2)])
+    .map(x => ({v:x.en, label:`${x.emoji} ${x.he}`}));
+  choose(box, options, w.en, done);
+}
+
+// רואים תמונה ומרכיבים את האיות מאותיות
+function spellItem(box, item, done){
+  const w = item.word;
+  const letters = [...w.en];
+  const extra = shuffle([...LETTERS].filter(c => !letters.includes(c))).slice(0, 3);
+  const tiles = shuffle([...letters, ...extra]).map(ch => ({ch, el:h('button', {className:'tile', textContent:ch})}));
+  const slots = letters.map(() => h('div', {className:'slot'}));
+  const stack = [];
+  const msg = h('p', {className:'msg'});
+  let misses = 0, finished = false;
+
+  const finishWith = first => {
+    finished = true;
+    tiles.forEach(t => t.el.disabled = true);
+    slots.forEach((s, k) => s.textContent = letters[k]);
+    say(w.en);
+    done(first);
+  };
+
+  const check = () => {
+    const guess = stack.map(x => x.ch).join('');
+    if(guess === w.en){
+      msg.textContent = '✅ יפה!';
+      finishWith(misses === 0);
+      return;
+    }
+    misses++;
+    msg.textContent = '🤔 כמעט! שמע שוב 🔊';
+    slots.forEach(s => s.classList.add('shake'));
+    setTimeout(() => slots.forEach(s => s.classList.remove('shake')), 400);
+    if(misses >= 2){
+      msg.textContent = '👀 כך כותבים את המילה:';
+      finishWith(false);
+      return;
+    }
+    setTimeout(clear, 700);
+  };
+
+  const clear = () => {
+    while(stack.length) undo();
+  };
+
+  const undo = () => {
+    const last = stack.pop();
+    if(!last) return;
+    last.tile.el.disabled = false;
+    slots[stack.length].textContent = '';
+  };
+
+  tiles.forEach(t => {
+    t.el.onclick = () => {
+      if(finished || stack.length >= letters.length) return;
+      stack.push({ch:t.ch, tile:t});
+      t.el.disabled = true;
+      slots[stack.length - 1].textContent = t.ch;
+      if(stack.length === letters.length) check();
+    };
+  });
+
+  box.append(
+    h('div', {className:'big-word', textContent:w.emoji}),
+    h('p', {className:'prompt', textContent:`איך כותבים באנגלית: "${w.he}"?`}),
+    h('div', {className:'center'},
+      h('button', {className:'speak', textContent:'🔊 שמע את המילה', onclick:() => say(w.en)})),
+    h('div', {className:'slots'}, slots),
+    h('div', {className:'tiles'}, tiles.map(t => t.el)),
+    h('div', {className:'row'},
+      h('button', {className:'speak', textContent:'⌫ מחק אות', onclick:() => { if(!finished) undo(); }})),
+    msg,
+  );
+  setTimeout(() => say(w.en), 300);
+}
+
+// השלמת משפט באנגלית
+function sentenceItem(box, item, done){
+  const hint = h('p', {className:'hint', textContent:''});
+  box.append(
+    h('p', {className:'sentence', textContent:item.s}),
+    h('div', {className:'row'},
+      h('button', {className:'speak', textContent:'🔊 הקשב', onclick:() => say(item.s.replace('___', '...'))}),
+      h('button', {className:'speak', textContent:'💡 רמז בעברית', onclick(){ hint.textContent = item.he; this.disabled = true; }})),
+    hint,
+    h('p', {className:'prompt', textContent:'איזו מילה חסרה?'}),
+  );
+  choose(box, shuffle(item.opts).map(o => ({v:o, label:o})), item.a, done);
+}
+
+// סיפור תנ"ך ושאלה עליו
+function bibleItem(box, item, done){
+  const b = item.b;
+  box.append(
+    h('p', {className:'big-word', textContent:b.emoji}),
+    h('h2', {className:'center', textContent:b.title}),
+    h('div', {className:'story', textContent:b.text}),
+    h('div', {className:'row'},
+      h('button', {className:'speak', textContent:'🔊 הקשב לסיפור', onclick:() => say(b.text, 'he-IL')})),
+    h('p', {className:'prompt', textContent:b.q}),
+  );
+  choose(box, shuffle(b.opts).map(o => ({v:o, label:o})), b.a, done);
+}
+
+// ===================================================================
+// בניית סיבובים
+// ===================================================================
+function englishRound(){
+  const w = shuffle(WORDS);
+  const sent = shuffle(SENTENCES)[0];
+  const items = [
+    {kind:'listen', key:w[0].en, label:w[0].en, word:w[0]},
+    {kind:'listen', key:w[1].en, label:w[1].en, word:w[1]},
+    {kind:'spell',  key:w[2].en, label:w[2].en, word:w[2]},
+    {kind:'spell',  key:w[3].en, label:w[3].en, word:w[3]},
+    {kind:'sentence', key:'s:' + SENTENCES.indexOf(sent), label:sent.s, ...sent},
+  ];
+  return shuffle(items);
+}
+
+function tanakhRound(){
+  return shuffle(BIBLE).slice(0, 5).map(b => ({kind:'bible', key:'t:' + b.title, label:b.title, b}));
+}
+
+// ===================================================================
+// התחלה
+// ===================================================================
+home();
+</script>
+</body>
+</html>

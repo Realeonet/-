@@ -67,6 +67,11 @@ button:focus-visible,.choice:focus-visible{outline:4px solid #ffd23f;outline-off
 .pop{animation:pop .4s}
 @keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 @keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+.choice.sel{border-color:var(--blue);background:#e4efff}
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.pairs .col{display:grid;gap:10px;align-content:start}
+.pair{font-size:20px;min-height:60px;padding:8px 10px}
+.row .choice{width:auto;min-height:56px;font-size:22px;padding:10px 16px}
 .grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
 .grade{font:inherit;font-size:22px;font-weight:700;min-height:56px;border:3px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);cursor:pointer}
 .grade.on{background:var(--blue);border-color:var(--blue);color:#fff}
@@ -692,7 +697,7 @@ function home(){
       h('p', {className:'hero-stars', textContent:`⭐ ${me.stars} כוכבים`}),
       h('p', {className:'hero-next', textContent:badgeText()}),
       h('div', {className:'bar'}, (() => { const f = h('span', {className:'fill'}); f.style.width = progressPct() + '%'; return f; })())),
-    big('🇬🇧', 'אנגלית', 'לשמוע, לכתוב ולהשלים משפטים', () => startRound('en'), '#ffd6e0'),
+    big('🇬🇧', 'אנגלית', 'מסע מילים: לדבר, לשמוע, לכתוב, לשחק', englishMenu, '#ffd6e0'),
     big('📜', 'תנ״ך', 'סיפורים ושאלות', () => startRound('tanakh'), '#d6e8ff'),
     big('🔬', 'מדעים', 'נושאים קצרים ושאלות', () => startRound('science'), '#d8f5dc'),
     big('➗', 'מתמטיקה', 'כפל, שברים, שטחים ועוד', () => startRound('math'), '#ffe8c2'),
@@ -710,7 +715,8 @@ function parents(){
     h('h1', {textContent:'למבוגרים 👨‍👩‍👧'}),
     h('div', {className:'card'},
       h('p', {textContent:`⭐ כוכבים: ${me.stars}`}),
-      h('p', {textContent:`🏁 סיבובים שהושלמו: ${me.rounds}`})),
+      h('p', {textContent:`🏁 סיבובים שהושלמו: ${me.rounds}`}),
+      h('p', {textContent:`📚 מילים שנשלטו: ${Object.values(me.mastery || {}).filter(m => m.ok >= 3).length}`})),
     h('div', {className:'card'},
       h('h2', {textContent:'לחזרה בבית'}),
       missed.length
@@ -735,12 +741,13 @@ function parents(){
 // סיבוב: 5 שאלות, כוכב על כל תשובה נכונה מהניסיון הראשון
 // ===================================================================
 let round = null;
+let streak = 0; // רצף תשובות נכונות בלי טעות
 
-function startRound(subject){
-  const build = {en:englishRound, tanakh:tanakhRound, science:scienceRound, math:mathRound, hebrew:hebrewRound}[subject];
-  const items = build(me.grade);
+function startRound(subject, theme){
+  const build = {tanakh:tanakhRound, science:scienceRound, math:mathRound, hebrew:hebrewRound}[subject];
+  const items = subject === 'en' ? englishRound(me.grade, theme) : build(me.grade);
   if(!items) return noContent(subject);
-  round = {subject, items, i:0, stars:0};
+  round = {subject, theme, items, i:0, stars:0};
   showItem();
 }
 
@@ -779,7 +786,12 @@ function showItem(){
       me.missed[item.key] = m;
     }
     save();
-    box.append(h('p', {className:'msg pop', textContent: firstTry ? '⭐ מעולה! +1 כוכב' : '💪 בסדר, לומדים מזה!'}));
+    if(item.anchor) updateMastery(item.anchor.en, firstTry);
+    streak = firstTry ? streak + 1 : 0;
+    const praise = firstTry
+      ? (streak >= 3 ? `🔥 רצף ${streak}! ⭐ +1 כוכב` : '⭐ מעולה! +1 כוכב')
+      : '💪 בסדר, לומדים מזה!';
+    box.append(h('p', {className:'msg pop', textContent: praise}));
     setTimeout(() => {
       if(round === r){
         r.i++;
@@ -788,7 +800,8 @@ function showItem(){
     }, firstTry ? 900 : 1600);
   };
 
-  const renderers = {listen:listenItem, spell:spellItem, sentence:sentenceItem, bible:bibleItem};
+  const renderers = {listen:listenItem, spell:spellItem, sentence:sentenceItem, bible:bibleItem,
+    say:sayItem, pairs:pairsItem, hear:hearItem, order:orderItem, odd:oddItem};
   renderers[item.kind](box, item, next);
 }
 
@@ -803,7 +816,7 @@ function finish(){
       h('p', {className:'stars', textContent:`קיבלת ${r.stars} כוכבים מתוך ${r.items.length}`}),
       h('p', {textContent:badgeText()})),
     breakCard(),
-    h('button', {className:'btn', textContent:'עוד סיבוב 🚀', onclick:() => startRound(r.subject)}),
+    h('button', {className:'btn', textContent:'עוד סיבוב 🚀', onclick:() => startRound(r.subject, r.theme)}),
     h('button', {className:'btn alt', textContent:'לתפריט', onclick:home}),
   );
 }
@@ -989,19 +1002,334 @@ function bibleItem(box, item, done){
 // ===================================================================
 // בניית סיבובים
 // ===================================================================
-function englishRound(grade){
-  const c = CONTENT.en[grade];
-  if(!c) return null;
-  const w = shuffle(c.words);
-  const sent = shuffle(c.sentences)[0];
-  const items = [
-    {kind:'listen', key:w[0].en, label:w[0].en, word:w[0], pool:c.words},
-    {kind:'listen', key:w[1].en, label:w[1].en, word:w[1], pool:c.words},
-    {kind:'spell',  key:w[2].en, label:w[2].en, word:w[2]},
-    {kind:'spell',  key:w[3].en, label:w[3].en, word:w[3]},
-    {kind:'sentence', key:'s:' + c.sentences.indexOf(sent), label:sent.s, ...sent},
-  ];
-  return shuffle(items);
+// ===================================================================
+// אנגלית: מאגר מילים לפי נושא ורמה, סשנים של 10 שאלות ומשחקים מגוונים
+// ===================================================================
+const THEMES = [
+  {key:'animals', title:'חיות', icon:'🐾', color:'#ffe0b3'},
+  {key:'food', title:'אוכל', icon:'🍎', color:'#ffd6d6'},
+  {key:'home', title:'הבית', icon:'🏠', color:'#d6e8ff'},
+  {key:'school', title:'בית הספר', icon:'🎒', color:'#e6dcff'},
+  {key:'body', title:'הגוף', icon:'🧍', color:'#ffe8f5'},
+  {key:'colors', title:'צבעים', icon:'🎨', color:'#fff3c4'},
+  {key:'clothes', title:'בגדים', icon:'👕', color:'#d8f5dc'},
+  {key:'weather', title:'מזג אוויר', icon:'⛅', color:'#d6f0ff'},
+  {key:'family', title:'משפחה', icon:'👨‍👩‍👧', color:'#ffe6cc'},
+  {key:'transport', title:'תחבורה', icon:'🚀', color:'#e0f7f4'},
+  {key:'nature', title:'טבע', icon:'🌿', color:'#d8f5dc'},
+  {key:'feelings', title:'רגשות', icon:'😊', color:'#fff0c2'},
+  {key:'actions', title:'פעולות', icon:'🏃', color:'#f0e0ff'},
+];
+
+// [אנגלית, תרגום, אימוג׳י, רמה (כיתה), נושא]
+const ENG_BANK = [
+  ['cat','חתול','🐱',1,'animals'], ['dog','כלב','🐶',1,'animals'], ['fish','דג','🐟',1,'animals'],
+  ['bird','ציפור','🐦',1,'animals'], ['cow','פרה','🐮',1,'animals'], ['pig','חזיר','🐷',1,'animals'],
+  ['frog','צפרדע','🐸',1,'animals'], ['duck','ברווז','🦆',2,'animals'], ['horse','סוס','🐴',2,'animals'],
+  ['rabbit','ארנב','🐰',2,'animals'], ['lion','אריה','🦁',2,'animals'], ['monkey','קוף','🐵',2,'animals'],
+  ['mouse','עכבר','🐭',2,'animals'], ['elephant','פיל','🐘',3,'animals'], ['giraffe','ג׳ירפה','🦒',3,'animals'],
+  ['tiger','נמר','🐯',3,'animals'], ['snake','נחש','🐍',3,'animals'], ['bear','דוב','🐻',3,'animals'],
+  ['sheep','כבשה','🐑',3,'animals'], ['zebra','זברה','🦓',4,'animals'],
+  ['apple','תפוח','🍎',1,'food'], ['banana','בננה','🍌',1,'food'], ['egg','ביצה','🥚',1,'food'],
+  ['milk','חלב','🥛',2,'food'], ['bread','לחם','🍞',2,'food'], ['cheese','גבינה','🧀',2,'food'],
+  ['pizza','פיצה','🍕',2,'food'], ['orange','תפוז','🍊',2,'food'], ['cake','עוגה','🍰',2,'food'],
+  ['candy','ממתק','🍬',3,'food'], ['carrot','גזר','🥕',3,'food'], ['potato','תפוח אדמה','🥔',3,'food'],
+  ['tomato','עגבנייה','🍅',3,'food'], ['juice','מיץ','🧃',3,'food'], ['sandwich','כריך','🥪',4,'food'],
+  ['chocolate','שוקולד','🍫',4,'food'],
+  ['house','בית','🏠',1,'home'], ['door','דלת','🚪',2,'home'], ['window','חלון','🪟',2,'home'],
+  ['bed','מיטה','🛏️',2,'home'], ['chair','כיסא','🪑',2,'home'], ['phone','טלפון','📱',2,'home'],
+  ['key','מפתח','🔑',3,'home'], ['lamp','מנורה','💡',3,'home'], ['clock','שעון','🕰️',3,'home'],
+  ['computer','מחשב','💻',3,'home'], ['sofa','ספה','🛋️',3,'home'], ['bathroom','שירותים','🛁',4,'home'],
+  ['kitchen','מטבח','🍳',4,'home'], ['mirror','מראה','🪞',4,'home'],
+  ['school','בית ספר','🏫',1,'school'], ['book','ספר','📖',1,'school'], ['pen','עט','🖊️',2,'school'],
+  ['pencil','עיפרון','✏️',2,'school'], ['bag','תיק','🎒',2,'school'], ['ruler','סרגל','📏',3,'school'],
+  ['paper','דף','📄',3,'school'], ['scissors','מספריים','✂️',4,'school'], ['notebook','מחברת','📓',4,'school'],
+  ['teacher','מורה','👩‍🏫',4,'school'],
+  ['hand','יד','✋',1,'body'], ['eye','עין','👁️',1,'body'], ['nose','אף','👃',2,'body'],
+  ['ear','אוזן','👂',2,'body'], ['mouth','פה','👄',2,'body'], ['leg','רגל','🦵',2,'body'],
+  ['foot','כף רגל','🦶',2,'body'], ['arm','זרוע','💪',3,'body'], ['hair','שיער','💇',3,'body'],
+  ['tooth','שן','🦷',3,'body'], ['finger','אצבע','☝️',3,'body'], ['face','פנים','🙂',3,'body'],
+  ['red','אדום','🔴',1,'colors'], ['blue','כחול','🔵',1,'colors'], ['green','ירוק','🟢',1,'colors'],
+  ['yellow','צהוב','🟡',1,'colors'], ['black','שחור','⚫',2,'colors'], ['white','לבן','⚪',2,'colors'],
+  ['purple','סגול','🟣',3,'colors'], ['brown','חום','🟤',3,'colors'],
+  ['hat','כובע','🎩',1,'clothes'], ['shirt','חולצה','👕',2,'clothes'], ['shoe','נעל','👟',2,'clothes'],
+  ['sock','גרב','🧦',2,'clothes'], ['pants','מכנסיים','👖',3,'clothes'], ['dress','שמלה','👗',3,'clothes'],
+  ['jacket','מעיל','🧥',3,'clothes'], ['glasses','משקפיים','👓',4,'clothes'], ['gloves','כפפות','🧤',4,'clothes'],
+  ['sun','שמש','☀️',1,'weather'], ['rain','גשם','🌧️',2,'weather'], ['snow','שלג','❄️',2,'weather'],
+  ['cloud','ענן','☁️',2,'weather'], ['wind','רוח','💨',3,'weather'], ['rainbow','קשת בענן','🌈',3,'weather'],
+  ['umbrella','מטרייה','☂️',3,'weather'], ['lightning','ברק','⚡',5,'weather'],
+  ['mom','אמא','👩',1,'family'], ['dad','אבא','👨',1,'family'], ['baby','תינוק','👶',2,'family'],
+  ['sister','אחות','👧',2,'family'], ['brother','אח','👦',2,'family'], ['grandma','סבתא','👵',3,'family'],
+  ['grandpa','סבא','👴',3,'family'], ['friend','חבר','👫',3,'family'], ['uncle','דוד','🧔',4,'family'],
+  ['car','מכונית','🚗',1,'transport'], ['bus','אוטובוס','🚌',2,'transport'], ['bike','אופניים','🚲',2,'transport'],
+  ['train','רכבת','🚆',2,'transport'], ['plane','מטוס','✈️',2,'transport'], ['boat','סירה','⛵',3,'transport'],
+  ['taxi','מונית','🚕',3,'transport'], ['truck','משאית','🚚',3,'transport'], ['rocket','טיל חלל','🚀',4,'transport'],
+  ['helicopter','מסוק','🚁',4,'transport'],
+  ['tree','עץ','🌳',1,'nature'], ['flower','פרח','🌸',1,'nature'], ['water','מים','💧',1,'nature'],
+  ['star','כוכב','⭐',2,'nature'], ['moon','ירח','🌙',2,'nature'], ['sea','ים','🌊',2,'nature'],
+  ['grass','דשא','🌿',2,'nature'], ['sand','חול','🏖️',3,'nature'], ['mountain','הר','⛰️',3,'nature'],
+  ['earth','כדור הארץ','🌍',3,'nature'], ['fire','אש','🔥',3,'nature'], ['leaf','עלה','🍃',4,'nature'],
+  ['happy','שמח','😊',2,'feelings'], ['sad','עצוב','😢',2,'feelings'], ['angry','כועס','😠',3,'feelings'],
+  ['tired','עייף','😴',3,'feelings'], ['hungry','רעב','🤤',3,'feelings'], ['scared','מפחד','😨',4,'feelings'],
+  ['surprised','מופתע','😲',4,'feelings'], ['excited','נרגש','🤩',5,'feelings'],
+  ['run','לרוץ','🏃',2,'actions'], ['write','לכתוב','✍️',2,'actions'], ['jump','לקפוץ','🤸',3,'actions'],
+  ['swim','לשחות','🏊',3,'actions'], ['sing','לשיר','🎤',3,'actions'], ['dance','לרקוד','💃',3,'actions'],
+  ['draw','לצייר','🎨',3,'actions'], ['read','לקרוא','📚',3,'actions'], ['sleep','לישון','🛌',3,'actions'],
+  ['climb','לטפס','🧗',5,'actions'],
+];
+
+// משפטים להשלמה, עם רמה (כיתה)
+const ENG_SENT = [
+  {lvl:1, s:'I have a ___.', opts:['dog','sun','fish'], a:'dog', he:'יש לי כלב.'},
+  {lvl:1, s:'The ___ is yellow.', opts:['sun','frog','hat'], a:'sun', he:'השמש צהובה.'},
+  {lvl:2, s:'The cat is ___ the box.', opts:['in','on','blue'], a:'in', he:'החתול נמצא בתוך הקופסה.'},
+  {lvl:2, s:'I ___ my teeth every morning.', opts:['brush','brushes','brushing'], a:'brush', he:'אני מצחצח שיניים כל בוקר.'},
+  {lvl:2, s:'She ___ a red hat.', opts:['has','have','having'], a:'has', he:'יש לה כובע אדום.'},
+  {lvl:3, s:'We ___ to the park on Sunday.', opts:['go','goes','going'], a:'go', he:'אנחנו הולכים לפארק ביום ראשון.'},
+  {lvl:3, s:'My mom ___ dinner at six.', opts:['cooks','cook','cooking'], a:'cooks', he:'אמא שלי מבשלת ארוחת ערב בשש.'},
+  {lvl:3, s:'It is ___ outside. Take an umbrella!', opts:['rainy','rain','rains'], a:'rainy', he:'בחוץ גשום. קחו מטרייה!'},
+  {lvl:4, s:'Can you ___ a bike?', opts:['ride','rides','riding'], a:'ride', he:'האם אתה יכול לרכוב על אופניים?'},
+  {lvl:4, s:'He ___ football every Friday.', opts:['plays','play','playing'], a:'plays', he:'הוא משחק כדורגל כל יום שישי.'},
+  {lvl:4, s:'I want to ___ a new friend.', opts:['make','makes','making'], a:'make', he:'אני רוצה ליצור חבר חדש.'},
+  {lvl:5, s:'Yesterday we ___ a movie.', opts:['watched','watch','watching'], a:'watched', he:'אתמול צפינו בסרט.'},
+  {lvl:5, s:'If it rains, I will ___ at home.', opts:['stay','stays','stayed'], a:'stay', he:'אם ירד גשם, אשאר בבית.'},
+  {lvl:6, s:'She has been ___ since morning.', opts:['studying','study','studied'], a:'studying', he:'היא לומדת מאז הבוקר.'},
+];
+
+const ENG_KINDS = ['listen','spell','say','pairs','hear','odd','order','sentence'];
+const MASS = ['water','milk','bread','cheese','sand','grass','fire','rain','snow','wind','juice','candy','chocolate','sea'];
+
+const toWord = ([en, he, emoji, lvl, theme]) => ({en, he, emoji, lvl, theme});
+const engWords = grade => ENG_BANK.map(toWord).filter(w => w.lvl <= grade);
+const themeWords = (grade, theme) => engWords(grade + 1).filter(w => w.theme === theme);
+
+// משפט קצר שמכיל את המילה, לתרגול האזנה וסדר מילים
+function phrase(w){
+  if(w.theme === 'colors' || w.theme === 'feelings') return `It is ${w.en}.`;
+  if(w.theme === 'actions') return `I can ${w.en}.`;
+  if(MASS.includes(w.en)) return `I see some ${w.en}.`;
+  return `I see ${/^[aeiou]/.test(w.en) ? 'an' : 'a'} ${w.en}.`;
+}
+
+// מילים שנשלטו (ענו נכון בלי טעות) מופיעות פחות, מילים חדשות או שטעינו בהן מופיעות יותר
+function updateMastery(word, ok){
+  me.mastery = me.mastery || {};
+  const m = me.mastery[word] || {ok:0};
+  m.ok = ok ? m.ok + 1 : Math.max(0, m.ok - 1);
+  me.mastery[word] = m;
+  me.recent = [word, ...(me.recent || [])].slice(0, 25);
+  save();
+}
+function pickWords(pool, n){
+  const recent = me.recent || [];
+  const mastery = me.mastery || {};
+  return pool
+    .map(w => ({w, s: (recent.includes(w.en) ? 0.1 : 1) / (1 + (mastery[w.en]?.ok || 0)) * (0.5 + Math.random())}))
+    .sort((a, b) => b.s - a.s)
+    .slice(0, n)
+    .map(x => x.w);
+}
+
+function englishRound(grade, theme){
+  const all = engWords(grade);
+  let pool = theme && theme !== 'mix' ? themeWords(grade, theme) : all;
+  if(pool.length < 4) pool = all;
+  const anchors = pickWords(pool, 10);
+  if(anchors.length < 10) anchors.push(...pickWords(all.filter(w => !anchors.includes(w)), 10 - anchors.length));
+  const sents = shuffle([...ENG_SENT, ...SENTENCES].filter(s => (s.lvl || 5) <= grade));
+  const kinds = shuffle([...ENG_KINDS, ...shuffle(ENG_KINDS).slice(0, 2)]);
+  let si = 0;
+  return anchors.map((w, i) => {
+    const kind = kinds[i];
+    if(kind === 'sentence'){
+      const s = sents[si++ % sents.length];
+      return {kind, key:'s:' + s.s, label:s.s, ...s};
+    }
+    const base = {kind, anchor:w, word:w, key:w.en, label:w.en, pool:all};
+    if(kind === 'pairs') return {...base, others: shuffle(all.filter(x => x !== w)).slice(0, 3)};
+    if(kind === 'hear') return {...base, options: shuffle([w, ...shuffle(all.filter(x => x !== w && x.emoji !== w.emoji)).slice(0, 2)]).map(x => ({v:x.en, label:x.emoji}))};
+    if(kind === 'order') return {...base, phrase: phrase(w)};
+    if(kind === 'odd'){
+      const T = shuffle(THEMES.map(t => t.key).filter(k => k !== w.theme && all.filter(x => x.theme === k).length >= 3))[0];
+      if(!T) return {...base, kind:'listen'};
+      const trio = shuffle(all.filter(x => x.theme === T)).slice(0, 3);
+      return {...base, options: shuffle([w, ...trio]).map(x => ({v:x.en, label:`${x.emoji} ${x.en}`}))};
+    }
+    return base;
+  });
+}
+
+function englishMenu(){
+  const grade = me.grade;
+  view(
+    h('button', {className:'btn alt', textContent:'⬅ חזרה', onclick:home}),
+    h('h1', {textContent:'🇬🇧 מסע באנגלית'}),
+    h('p', {className:'center', textContent:`כיתה ${gradeName(grade)} · ${engWords(grade).length} מילים זמינות`}),
+    big('🎲', 'הכול ביחד', 'מילים מכל הנושאים', () => startRound('en', 'mix'), '#fff3c4'),
+    THEMES.map(t => big(t.icon, t.title, `${themeWords(grade, t.key).length} מילים`, () => startRound('en', t.key), t.color)),
+  );
+}
+
+// זיהוי דיבור: הילד אומר את המילה. אם הדפדפן לא תומך, אפשר לאשר ידנית
+function sayItem(box, item, done){
+  const w = item.word;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let misses = 0, finished = false;
+  const msg = h('p', {className:'msg'});
+  const finish = first => {
+    if(finished) return;
+    finished = true;
+    say(w.en);
+    done(first);
+  };
+  const listen = () => {
+    if(!SR){
+      msg.textContent = 'הדפדפן לא מזהה דיבור. אמרו את המילה ולחצו ✅';
+      return;
+    }
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.maxAlternatives = 3;
+    msg.textContent = '🎤 מקשיבים...';
+    rec.onresult = e => {
+      const said = [...e.results[0]].map(a => a.transcript.toLowerCase().trim());
+      if(said.some(s => s.includes(w.en))){
+        msg.textContent = '🗣️ מעולה!';
+        finish(misses === 0);
+      }else{
+        misses++;
+        msg.textContent = `שמעתי "${said[0]}". נסו שוב 🎤`;
+        if(misses >= 2){
+          msg.textContent = `התשובה: ${w.en}`;
+          finish(false);
+        }
+      }
+    };
+    rec.onerror = () => { msg.textContent = 'לא שמענו. נסו שוב, או לחצו ✅ אם אמרתם'; };
+    rec.start();
+  };
+  box.append(
+    h('div', {className:'big-word', textContent:w.emoji}),
+    h('p', {className:'prompt', textContent:`איך אומרים באנגלית: "${w.he}"?`}),
+    h('div', {className:'row'},
+      h('button', {className:'speak', textContent:'🎤 אני אומר', onclick:listen}),
+      h('button', {className:'speak', textContent:'🔊 תקשיב קודם', onclick:() => say(w.en)}),
+      h('button', {className:'speak', textContent:'✅ אמרתי', onclick:() => finish(misses === 0)})),
+    msg,
+  );
+  setTimeout(() => say(w.en), 300);
+}
+
+// חיבור מילים באנגלית לתרגום שלהן בעברית
+function pairsItem(box, item, done){
+  const words = [item.word, ...item.others];
+  const left = shuffle(words).map(w => ({id:w.en, el:h('button', {className:'choice pair', textContent:w.en})}));
+  const right = shuffle(words).map(w => ({id:w.en, el:h('button', {className:'choice pair', textContent:`${w.emoji} ${w.he}`})}));
+  let sel = null, misses = 0, matched = 0, finished = false;
+  const msg = h('p', {className:'msg'});
+  const onPick = (btn, id, side) => {
+    if(finished || btn.disabled) return;
+    if(!sel || sel.side === side){
+      if(sel) sel.btn.classList.remove('sel');
+      sel = {btn, id, side};
+      btn.classList.add('sel');
+      return;
+    }
+    if(sel.id === id){
+      [sel.btn, btn].forEach(b => { b.classList.remove('sel'); b.classList.add('ok'); b.disabled = true; });
+      matched++;
+      sel = null;
+      msg.textContent = '✅ זוג!';
+      if(matched === words.length){
+        finished = true;
+        done(misses === 0);
+      }
+    }else{
+      misses++;
+      const a = sel.btn;
+      a.classList.remove('sel');
+      a.classList.add('nope');
+      btn.classList.add('nope');
+      setTimeout(() => { a.classList.remove('nope'); btn.classList.remove('nope'); }, 500);
+      sel = null;
+      msg.textContent = '🤔 לא זוג. נסו שוב';
+    }
+  };
+  left.forEach(x => x.el.onclick = () => onPick(x.el, x.id, 'L'));
+  right.forEach(x => x.el.onclick = () => onPick(x.el, x.id, 'R'));
+  box.append(
+    h('p', {className:'prompt', textContent:'חברו כל מילה לתרגום שלה'}),
+    h('div', {className:'pairs'},
+      h('div', {className:'col'}, left.map(x => x.el)),
+      h('div', {className:'col'}, right.map(x => x.el))),
+    msg,
+  );
+}
+
+// האזנה למשפט וזיהוי התמונה
+function hearItem(box, item, done){
+  const text = phrase(item.word);
+  box.append(
+    h('p', {className:'prompt', textContent:'🎧 מה שומעים? מקישים על התמונה'}),
+    h('div', {className:'center'}, h('button', {className:'speak', textContent:'🔊 שוב', onclick:() => say(text)})),
+  );
+  setTimeout(() => say(text), 300);
+  choose(box, item.options, item.word.en, done);
+}
+
+// סידור מילים למשפט באנגלית
+function orderItem(box, item, done){
+  const text = item.phrase;
+  const tokens = text.replace('.', '').split(' ');
+  const tiles = shuffle(tokens.map((t, i) => ({t, el:h('button', {className:'choice', textContent:t})})));
+  const built = [];
+  const shown = h('p', {className:'sentence', textContent:'…'});
+  let misses = 0, finished = false;
+  const msg = h('p', {className:'msg'});
+  tiles.forEach(x => x.el.onclick = () => {
+    if(finished || x.el.disabled) return;
+    if(x.t === tokens[built.length]){
+      built.push(x.t);
+      x.el.disabled = true;
+      x.el.classList.add('ok');
+      shown.textContent = built.join(' ');
+      if(built.length === tokens.length){
+        finished = true;
+        msg.textContent = '✅ יפה!';
+        say(text);
+        done(misses === 0);
+      }
+    }else{
+      misses++;
+      x.el.classList.add('nope');
+      setTimeout(() => x.el.classList.remove('nope'), 400);
+      msg.textContent = '🤔 לא זה. שימו לב לסדר';
+      if(misses >= 2){
+        finished = true;
+        msg.textContent = `👀 המשפט: ${text}`;
+        say(text);
+        done(false);
+      }
+    }
+  });
+  box.append(
+    h('div', {className:'big-word', textContent:item.word.emoji}),
+    h('p', {className:'prompt', textContent:'סדרו את המילים למשפט 🧩'}),
+    h('div', {className:'center'}, h('button', {className:'speak', textContent:'🔊 הקשב', onclick:() => say(text)})),
+    shown,
+    h('div', {className:'row'}, tiles.map(x => x.el)),
+    msg,
+  );
+  setTimeout(() => say(text), 300);
+}
+
+// מי לא שייך לקבוצה
+function oddItem(box, item, done){
+  box.append(
+    h('div', {className:'big-word', textContent:'🧩'}),
+    h('p', {className:'prompt', textContent:'איזו מילה לא שייכת לקבוצה?'}),
+  );
+  choose(box, item.options, item.word.en, done);
 }
 
 function storyRound(subject, grade){

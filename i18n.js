@@ -18,6 +18,7 @@ const MIC_ERRORS = {
 
 const UI = {
   ru: {
+    themeLabel: 'Оформление',
     modeLabel: 'Режим озвучки',
     modeManual: 'Вручную',
     modeAuto: 'Авто',
@@ -63,6 +64,7 @@ const UI = {
     categories: { greet: 'Приветствия', basic: 'Базовое', food: 'Ресторан', transport: 'Транспорт', shop: 'Покупки', help: 'Помощь' },
   },
   es: {
+    themeLabel: 'Tema',
     modeLabel: 'Modo de voz',
     modeManual: 'Manual',
     modeAuto: 'Automático',
@@ -108,6 +110,7 @@ const UI = {
     categories: { greet: 'Saludos', basic: 'Básico', food: 'Restaurante', transport: 'Transporte', shop: 'Compras', help: 'Ayuda' },
   },
   he: {
+    themeLabel: 'ערכת נושא',
     modeLabel: 'מצב הקראה',
     modeManual: 'ידני',
     modeAuto: 'אוטומטי',
@@ -153,6 +156,7 @@ const UI = {
     categories: { greet: 'ברכות', basic: 'בסיסי', food: 'מסעדה', transport: 'תחבורה', shop: 'קניות', help: 'עזרה' },
   },
   en: {
+    themeLabel: 'Theme',
     modeLabel: 'Playback mode',
     modeManual: 'Manual',
     modeAuto: 'Auto',
@@ -198,6 +202,7 @@ const UI = {
     categories: { greet: 'Greetings', basic: 'Basics', food: 'Restaurant', transport: 'Transport', shop: 'Shopping', help: 'Help' },
   },
   ar: {
+    themeLabel: 'السمة',
     modeLabel: 'وضع التشغيل',
     modeManual: 'يدوي',
     modeAuto: 'تلقائي',
@@ -243,6 +248,7 @@ const UI = {
     categories: { greet: 'تحيات', basic: 'أساسيات', food: 'مطعم', transport: 'مواصلات', shop: 'تسوق', help: 'مساعدة' },
   },
   zh: {
+    themeLabel: '主题',
     modeLabel: '播放模式',
     modeManual: '手动',
     modeAuto: '自动',

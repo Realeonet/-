@@ -7,12 +7,25 @@ const state = {
   recognizer: null,
   filter: 'all',
   autoSpeak: false,
+  theme: 'auto',
 };
 
+// Оформление: auto — по системе (светлое или тёмное), остальное — выбранная тема.
+const THEMES = [
+  { id: 'auto', color: 'linear-gradient(135deg, #ffffff 50%, #14171f 50%)' },
+  { id: 'light', color: '#ffffff' },
+  { id: 'dark', color: '#14171f' },
+  { id: 'pink', color: '#e0519a' },
+  { id: 'mint', color: '#1f9d6b' },
+  { id: 'sky', color: '#2f7fd1' },
+  { id: 'violet', color: '#7c4dd6' },
+];
+
 const el = {
-  uiLangs: document.getElementById('ui-langs'),
-  inputLangs: document.getElementById('input-langs'),
-  outputLangs: document.getElementById('output-langs'),
+  uiLang: document.getElementById('ui-lang'),
+  inputLang: document.getElementById('input-lang'),
+  outputLang: document.getElementById('output-lang'),
+  themes: document.getElementById('themes'),
   swapBtn: document.getElementById('swap-btn'),
   mic: document.getElementById('mic'),
   micLabel: document.getElementById('mic-label'),
@@ -46,6 +59,7 @@ function loadPrefs() {
     if (LANGS[saved.source]) state.source = saved.source;
     if (LANGS[saved.target]) state.target = saved.target;
     if (typeof saved.auto === 'boolean') state.autoSpeak = saved.auto;
+    if (THEMES.some((theme) => theme.id === saved.theme)) state.theme = saved.theme;
   } catch (error) {
     console.warn(error);
   }
@@ -61,6 +75,7 @@ function savePrefs() {
       source: state.source,
       target: state.target,
       auto: state.autoSpeak,
+      theme: state.theme,
     }));
   } catch (error) {
     console.warn(error);
@@ -82,23 +97,53 @@ function chipButton(code, active, onClick) {
   return btn;
 }
 
-function renderUiLangs() {
-  el.uiLangs.innerHTML = '';
+// Заполняет выпадающий список языками с флагами и выбирает нужный.
+function fillSelect(select, value) {
+  select.innerHTML = '';
   CODES.forEach((code) => {
-    el.uiLangs.appendChild(chipButton(code, state.ui === code, () => {
-      state.ui = code;
-      savePrefs();
-      applyUI();
-    }));
+    const option = document.createElement('option');
+    option.value = code;
+    option.textContent = `${LANGS[code].flag} ${LANGS[code].name}`;
+    select.appendChild(option);
   });
+  select.value = value;
+}
+
+function renderUiLangs() {
+  fillSelect(el.uiLang, state.ui);
 }
 
 function renderLangChips() {
-  el.inputLangs.innerHTML = '';
-  el.outputLangs.innerHTML = '';
-  CODES.forEach((code) => {
-    el.inputLangs.appendChild(chipButton(code, state.source === code, () => setSource(code)));
-    el.outputLangs.appendChild(chipButton(code, state.target === code, () => setTarget(code)));
+  fillSelect(el.inputLang, state.source);
+  fillSelect(el.outputLang, state.target);
+}
+
+function applyTheme() {
+  if (state.theme === 'auto') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', state.theme);
+  }
+}
+
+function renderThemes() {
+  el.themes.innerHTML = '';
+  THEMES.forEach((theme) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'swatch' + (state.theme === theme.id ? ' is-active' : '');
+    btn.style.background = theme.color;
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', String(state.theme === theme.id));
+    btn.setAttribute('aria-label', theme.id);
+    btn.title = theme.id;
+    btn.addEventListener('click', () => {
+      state.theme = theme.id;
+      savePrefs();
+      applyTheme();
+      renderThemes();
+    });
+    el.themes.appendChild(btn);
   });
 }
 
@@ -211,6 +256,7 @@ function applyUI() {
   renderFilters();
   renderPhrases();
   renderModeChips();
+  renderThemes();
   updateMicLabel();
   updateRecordButton();
 }
@@ -525,7 +571,16 @@ el.sourceText.addEventListener('keydown', (event) => {
   }
 });
 
+el.uiLang.addEventListener('change', (event) => {
+  state.ui = event.target.value;
+  savePrefs();
+  applyUI();
+});
+el.inputLang.addEventListener('change', (event) => setSource(event.target.value));
+el.outputLang.addEventListener('change', (event) => setTarget(event.target.value));
+
 loadPrefs();
+applyTheme();
 el.sourceText.lang = state.source;
 el.sourceText.dir = LANGS[state.source].dir;
 applyUI();

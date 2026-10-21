@@ -9,6 +9,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
+/* Оформление по умолчанию — светлое; тёмное — по системе или выбором темы. */
 :root {
   --bg: #f5f6f8;
   --card: #ffffff;
@@ -17,12 +18,12 @@
   --accent: #d6336c;
   --accent-soft: #fde7ef;
   --border: #e3e6ec;
-  --radius: 14px;
+  --radius: 16px;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme=light]) {
+  :root:not([data-theme]) {
     --bg: #14171f;
     --card: #1e222c;
     --text: #e8eaf0;
@@ -45,6 +46,50 @@
   color-scheme: dark;
 }
 
+:root[data-theme=pink] {
+  --bg: #fff4f8;
+  --card: #ffffff;
+  --text: #4a1d33;
+  --muted: #a06a84;
+  --accent: #e0519a;
+  --accent-soft: #ffe3f0;
+  --border: #f6cfe2;
+  color-scheme: light;
+}
+
+:root[data-theme=mint] {
+  --bg: #effbf5;
+  --card: #ffffff;
+  --text: #173d30;
+  --muted: #5d8a79;
+  --accent: #1f9d6b;
+  --accent-soft: #d9f5e8;
+  --border: #cdeee0;
+  color-scheme: light;
+}
+
+:root[data-theme=sky] {
+  --bg: #eef6ff;
+  --card: #ffffff;
+  --text: #17324d;
+  --muted: #5f7d99;
+  --accent: #2f7fd1;
+  --accent-soft: #dcecff;
+  --border: #cfe2f7;
+  color-scheme: light;
+}
+
+:root[data-theme=violet] {
+  --bg: #f6f3ff;
+  --card: #ffffff;
+  --text: #2d1f4d;
+  --muted: #7a6c99;
+  --accent: #7c4dd6;
+  --accent-soft: #ece3ff;
+  --border: #e0d5f7;
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -55,6 +100,10 @@ body {
   color: var(--text);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.45;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .app {
@@ -68,14 +117,14 @@ body {
 .app-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
 }
 
 .brand h1 {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   margin: 0;
 }
 
@@ -85,8 +134,110 @@ body {
   font-size: 0.9rem;
 }
 
-[hidden] {
-  display: none !important;
+.header-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Выбор языка интерфейса: отдельная «таблетка» с глобусом. */
+.ui-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.ui-pick select {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+/* Цветовые темы — кружки. */
+.themes {
+  display: flex;
+  gap: 8px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatch.is-active {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+/* Выбор языков: «откуда → куда» с поменяться посередине. */
+.lang-card {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 10px;
+}
+
+.lang-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lang-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.lang-select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.swap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  align-self: end;
 }
 
 .share {
@@ -107,16 +258,22 @@ body {
   margin-top: 12px;
 }
 
-.btn-record.is-recording {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+/* Режим озвучки: переключатель-пилюля. */
+.mode-chips {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
 }
 
-a.chip {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
+.mode-chips .chip {
+  flex: 1;
+  border: 0;
+  border-radius: 999px;
+  text-align: center;
 }
 
 .chips {
@@ -137,57 +294,16 @@ a.chip {
   white-space: nowrap;
 }
 
-.mode-chips {
-  margin-bottom: 12px;
-}
-
 .chip.is-active {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
 }
 
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.card h2 {
-  font-size: 1.1rem;
-  margin: 0 0 12px;
-}
-
-.lang-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.lang-group {
-  flex: 1 1 220px;
-  min-width: 0;
-}
-
-.lang-label {
-  display: block;
-  font-size: 0.9rem;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.swap {
-  flex: none;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
+a.chip {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .mic {
@@ -198,7 +314,7 @@ a.chip {
   width: 100%;
   padding: 24px 12px;
   margin-bottom: 16px;
-  border: 2px dashed var(--border);
+  border: 2px dashed var(--accent);
   border-radius: var(--radius);
   background: var(--accent-soft);
   color: var(--text);
@@ -223,7 +339,6 @@ a.chip {
 
 .mic.is-listening {
   border-style: solid;
-  border-color: var(--accent);
   animation: pulse 1.4s ease-in-out infinite;
 }
 
@@ -243,7 +358,7 @@ textarea {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--bg);
   color: var(--text);
   font: inherit;
@@ -260,7 +375,7 @@ textarea:focus {
 .btn {
   width: 100%;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -272,6 +387,7 @@ textarea:focus {
   cursor: wait;
 }
 
+/* Главное действие — заполненная кнопка, остальные — контурные или мягкие. */
 .btn-primary {
   background: var(--accent);
   color: #fff;
@@ -283,10 +399,21 @@ textarea:focus {
   border-color: var(--border);
 }
 
+.btn-soft {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.btn-record.is-recording {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .result {
   margin-top: 16px;
   padding: 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--bg);
   border: 1px solid var(--border);
 }
@@ -359,9 +486,9 @@ textarea:focus {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
+  border: 0;
+  background: var(--accent-soft);
+  color: var(--accent);
   cursor: pointer;
   font-size: 0.9rem;
 }
@@ -372,6 +499,20 @@ textarea:focus {
   text-align: center;
   margin: 8px 0 24px;
 }
+
+.footer-note a {
+  color: var(--accent);
+}
+
+@media (max-width: 420px) {
+  .lang-card {
+    grid-template-columns: 1fr;
+  }
+  .swap {
+    justify-self: center;
+    align-self: center;
+  }
+}
 </style>
 </head>
 <body>
@@ -381,20 +522,21 @@ textarea:focus {
       <h1 data-i18n="appTitle">Minkin · Переводчик</h1>
       <p class="tagline" data-i18n="tagline">Звук на звук</p>
     </div>
-    <div class="chips" id="ui-langs" role="radiogroup" data-i18n-aria="uiLang"></div>
+    <div class="header-tools">
+      <label class="ui-pick"><span aria-hidden="true">🌐</span><select id="ui-lang" data-i18n-aria="uiLang"></select></label>
+      <div class="themes" id="themes" role="radiogroup" data-i18n-aria="themeLabel"></div>
+    </div>
   </header>
 
-  <section class="card">
-    <div class="lang-row">
-      <div class="lang-group">
-        <span class="lang-label" data-i18n="inputLabel">Язык ввода</span>
-        <div class="chips" id="input-langs" role="radiogroup" data-i18n-aria="inputLabel"></div>
-      </div>
-      <button type="button" id="swap-btn" class="swap" data-i18n="swap">⇄ Поменять местами</button>
-      <div class="lang-group">
-        <span class="lang-label" data-i18n="outputLabel">Язык перевода</span>
-        <div class="chips" id="output-langs" role="radiogroup" data-i18n-aria="outputLabel"></div>
-      </div>
+  <section class="card lang-card">
+    <div class="lang-box">
+      <span class="lang-label" data-i18n="inputLabel">Язык ввода</span>
+      <select id="input-lang" class="lang-select" data-i18n-aria="inputLabel"></select>
+    </div>
+    <button type="button" id="swap-btn" class="swap" data-i18n-aria="swap" aria-label="Поменять местами">⇄</button>
+    <div class="lang-box">
+      <span class="lang-label" data-i18n="outputLabel">Язык перевода</span>
+      <select id="output-lang" class="lang-select" data-i18n-aria="outputLabel"></select>
     </div>
   </section>
 
@@ -407,12 +549,12 @@ textarea:focus {
 
     <label class="field-label" for="source-text" data-i18n="textLabel">Ваш текст</label>
     <textarea id="source-text" rows="3" data-i18n-placeholder="textPlaceholder"></textarea>
-    <button type="button" id="translate-btn" class="btn btn-secondary" data-i18n="translate">Перевести</button>
+    <button type="button" id="translate-btn" class="btn btn-primary" data-i18n="translate">Перевести</button>
 
     <div id="result" class="result" hidden>
       <p class="result-source" id="result-source" dir="auto"></p>
       <p class="result-target" id="result-target"></p>
-      <button type="button" id="play-btn" class="btn btn-primary" data-i18n="play">▶ Воспроизвести</button>
+      <button type="button" id="play-btn" class="btn btn-soft" data-i18n="play">▶ Воспроизвести</button>
       <div class="share">
         <button type="button" id="share-native" class="chip" data-i18n="share">Поделиться</button>
         <button type="button" id="share-copy" class="chip" data-i18n="copy">Копировать</button>
@@ -431,7 +573,7 @@ textarea:focus {
   <section class="card">
     <h2 data-i18n="recordTitle">Запись</h2>
     <p class="hint" data-i18n="recordHint">Запишите свою фразу, прослушайте и отправьте файлом.</p>
-    <button type="button" id="record-btn" class="btn btn-secondary btn-record" data-i18n="record">● Записать</button>
+    <button type="button" id="record-btn" class="btn btn-soft btn-record" data-i18n="record">● Записать</button>
     <audio id="rec-audio" class="rec-audio" controls hidden></audio>
     <div class="share">
       <button type="button" id="share-audio" class="chip" data-i18n="shareAudio" hidden>Поделиться записью</button>

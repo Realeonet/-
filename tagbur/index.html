@@ -83,6 +83,14 @@ li{margin:6px 0}
 </head>
 <body>
 <main id="app"></main>
+<script src="words-1.js"></script>
+<script src="words-2.js"></script>
+<script src="words-3.js"></script>
+<script src="words-4.js"></script>
+<script src="words-5.js"></script>
+<script src="words-6.js"></script>
+<script src="words-7.js"></script>
+<script src="words-8.js"></script>
 
 <script>
 // ===================================================================
@@ -767,6 +775,7 @@ function showItem(){
 
   const item = r.items[r.i];
   const box = h('div', {className:'card'});
+  if(item.isNew) box.append(h('p', {className:'count', textContent:'🆕 מילה חדשה!'}));
   view(
     h('button', {className:'btn alt', textContent:'⬅ יציאה לתפריט', onclick:home}),
     h('p', {className:'count', textContent:`שאלה ${r.i + 1} מתוך ${r.items.length}`}),
@@ -809,6 +818,7 @@ function finish(){
   const r = round;
   round = null;
   me.rounds++;
+  if(r.subject === 'en') me.engSessions = (me.engSessions || 0) + 1;
   save();
   view(
     h('div', {className:'card center'},
@@ -1019,6 +1029,13 @@ const THEMES = [
   {key:'nature', title:'טבע', icon:'🌿', color:'#d8f5dc'},
   {key:'feelings', title:'רגשות', icon:'😊', color:'#fff0c2'},
   {key:'actions', title:'פעולות', icon:'🏃', color:'#f0e0ff'},
+  {key:'describe', title:'תארים', icon:'📏', color:'#e6f7ff'},
+  {key:'time', title:'זמן', icon:'📅', color:'#fff0e0'},
+  {key:'sports', title:'ספורט', icon:'⚽', color:'#e0ffe6'},
+  {key:'hobbies', title:'תחביבים', icon:'🎨', color:'#fce4ff'},
+  {key:'places', title:'מקומות', icon:'🏙️', color:'#e4ecff'},
+  {key:'jobs', title:'מקצועות', icon:'👩‍⚕️', color:'#fff5d6'},
+  {key:'things', title:'חפצים', icon:'🧰', color:'#eeeeee'},
 ];
 
 // [אנגלית, תרגום, אימוג׳י, רמה (כיתה), נושא]
@@ -1100,15 +1117,39 @@ const ENG_KINDS = ['listen','spell','say','pairs','hear','odd','order','sentence
 const MASS = ['water','milk','bread','cheese','sand','grass','fire','rain','snow','wind','juice','candy','chocolate','sea'];
 
 const toWord = ([en, he, emoji, lvl, theme]) => ({en, he, emoji, lvl, theme});
-const engWords = grade => ENG_BANK.map(toWord).filter(w => w.lvl <= grade);
+// כל המילים בלי כפילויות, מהקלות לקשות. מילים נפתחות בהדרגה לפי מספר הסשנים שהושלמו
+const ENG_ORDER = (() => {
+  const seen = new Set();
+  return [...ENG_BANK, ...(window.ENG_WORDS || [])]
+    .map(toWord)
+    .filter(w => !seen.has(w.en) && seen.add(w.en))
+    .map((w, i) => ({w, i}))
+    .sort((a, b) => a.w.lvl - b.w.lvl || a.i - b.i)
+    .map(x => x.w);
+})();
+const unlockedCount = () => Math.min(ENG_ORDER.length, 60 + 20 * (me.engSessions || 0));
+const engWords = grade => ENG_ORDER.slice(0, unlockedCount()).filter(w => w.lvl <= grade);
 const themeWords = (grade, theme) => engWords(grade + 1).filter(w => w.theme === theme);
 
 // משפט קצר שמכיל את המילה, לתרגול האזנה וסדר מילים
+const DAYS_PARTS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday','morning','afternoon','evening','night','noon','midnight'];
 function phrase(w){
-  if(w.theme === 'colors' || w.theme === 'feelings') return `It is ${w.en}.`;
+  if(['colors','feelings','describe'].includes(w.theme) || DAYS_PARTS.includes(w.en)) return `It is ${w.en}.`;
+  if(w.theme === 'time') return `We have ${/^[aeiou]/.test(w.en) ? 'an' : 'a'} ${w.en}.`;
   if(w.theme === 'actions') return `I can ${w.en}.`;
   if(MASS.includes(w.en)) return `I see some ${w.en}.`;
   return `I see ${/^[aeiou]/.test(w.en) ? 'an' : 'a'} ${w.en}.`;
+}
+// אותו משפט עם מקום חסר במקום המילה, להשלמה
+function blankPhrase(w){
+  return phrase(w).replace(new RegExp(`(a|an|some) ${w.en}`), '___').replace(` ${w.en}`, ' ___');
+}
+// השלמת משפט שנבנית מהמילה עצמה, כך שיש אינסוף משפטים כאלה
+function fillItem(w, all){
+  const same = shuffle(all.filter(x => x.theme === w.theme && x !== w)).slice(0, 2);
+  const others = shuffle(all.filter(x => x !== w && !same.includes(x))).slice(0, 2 - same.length);
+  return {kind:'sentence', key:'f:' + w.en, label:w.en, anchor:w, s:blankPhrase(w),
+    opts:shuffle([w, ...same, ...others]).map(x => x.en), a:w.en, he:w.he};
 }
 
 // מילים שנשלטו (ענו נכון בלי טעות) מופיעות פחות, מילים חדשות או שטעינו בהן מופיעות יותר
@@ -1134,18 +1175,25 @@ function englishRound(grade, theme){
   const all = engWords(grade);
   let pool = theme && theme !== 'mix' ? themeWords(grade, theme) : all;
   if(pool.length < 4) pool = all;
-  const anchors = pickWords(pool, 10);
+  // 3 מילים חדשות בכל סשן (שעוד לא נתקלנו בהן), השאר מהמילים שכבר מוכרות
+  const mastery = me.mastery || {};
+  const fresh = pool.filter(w => !mastery[w.en]);
+  const newOnes = fresh.length >= 3 ? pickWords(fresh, 3) : [];
+  const anchors = [...newOnes, ...pickWords(pool.filter(w => !newOnes.includes(w)), 10 - newOnes.length)];
   if(anchors.length < 10) anchors.push(...pickWords(all.filter(w => !anchors.includes(w)), 10 - anchors.length));
   const sents = shuffle([...ENG_SENT, ...SENTENCES].filter(s => (s.lvl || 5) <= grade));
   const kinds = shuffle([...ENG_KINDS, ...shuffle(ENG_KINDS).slice(0, 2)]);
   let si = 0;
   return anchors.map((w, i) => {
     const kind = kinds[i];
+    const isNew = newOnes.includes(w);
     if(kind === 'sentence'){
+      // חצי מההשלמות נבנות מהמילה עצמה, כך שיש הרבה יותר תרגולים
+      if(!sents.length || Math.random() < 0.5) return {...fillItem(w, all), isNew};
       const s = sents[si++ % sents.length];
-      return {kind, key:'s:' + s.s, label:s.s, ...s};
+      return {kind, key:'s:' + s.s, label:s.s, ...s, isNew:false};
     }
-    const base = {kind, anchor:w, word:w, key:w.en, label:w.en, pool:all};
+    const base = {kind, anchor:w, word:w, key:w.en, label:w.en, pool:all, isNew};
     if(kind === 'pairs') return {...base, others: shuffle(all.filter(x => x !== w)).slice(0, 3)};
     if(kind === 'hear') return {...base, options: shuffle([w, ...shuffle(all.filter(x => x !== w && x.emoji !== w.emoji)).slice(0, 2)]).map(x => ({v:x.en, label:x.emoji}))};
     if(kind === 'order') return {...base, phrase: phrase(w)};
@@ -1164,7 +1212,7 @@ function englishMenu(){
   view(
     h('button', {className:'btn alt', textContent:'⬅ חזרה', onclick:home}),
     h('h1', {textContent:'🇬🇧 מסע באנגלית'}),
-    h('p', {className:'center', textContent:`כיתה ${gradeName(grade)} · ${engWords(grade).length} מילים זמינות`}),
+    h('p', {className:'center', textContent:`כיתה ${gradeName(grade)} · ${engWords(grade).length} מילים פתוחות מתוך ${ENG_ORDER.length}`}),
     big('🎲', 'הכול ביחד', 'מילים מכל הנושאים', () => startRound('en', 'mix'), '#fff3c4'),
     THEMES.map(t => big(t.icon, t.title, `${themeWords(grade, t.key).length} מילים`, () => startRound('en', t.key), t.color)),
   );

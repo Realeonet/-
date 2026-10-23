@@ -1,0 +1,40 @@
+// מאגר מילים נוסף לאנגלית (חלק 5): מקומות, מקצועות
+// פורמט: [אנגלית, תרגום, אימוג׳י, רמה (כיתה), נושא]
+(window.ENG_WORDS = window.ENG_WORDS || []).push(
+  // מקומות (I see a ...)
+  ['park','פארק','🌳',2,'places'], ['shop','חנות','🏪',2,'places'], ['zoo','גן חיות','🦁',2,'places'],
+  ['hospital','בית חולים','🏥',3,'places'], ['market','שוק','🛒',3,'places'], ['city','עיר','🏙️',3,'places'],
+  ['town','עיירה','🏘️',3,'places'], ['home','בית (מקום)','🏡',2,'places'], ['building','בניין','🏢',3,'places'],
+  ['room','חדר','🚪',2,'places'], ['museum','מוזיאון','🏛️',4,'places'], ['village','כפר','🏘️',4,'places'],
+  ['restaurant','מסעדה','🍽️',4,'places'], ['cafe','בית קפה','☕',4,'places'], ['bakery','מאפייה','🥖',4,'places'],
+  ['pharmacy','בית מרקחת','💊',4,'places'], ['bank','בנק','🏦',4,'places'], ['hotel','מלון','🏨',4,'places'],
+  ['office','משרד','🏢',4,'places'], ['apartment','דירה','🏢',4,'places'], ['tower','מגדל','🗼',4,'places'],
+  ['church','כנסייה','⛪',5,'places'], ['mosque','מסגד','🕌',5,'places'], ['synagogue','בית כנסת','🕍',5,'places'],
+  ['factory','מפעל','🏭',5,'places'], ['kindergarten','גן ילדים','🏫',5,'places'], ['corner','פינה','📐',5,'places'],
+  ['hall','אולם','🏛️',5,'places'], ['stage','במה','🎭',5,'places'], ['lighthouse','מגדלור','🗼',5,'places'],
+  ['garage','מוסך','🚗',4,'places'], 
+  ['gate','שער','🚧',4,'places'], ['entrance','כניסה','🚪',5,'places'], ['exit','יציאה','🚪',5,'places'],
+  ['center','מרכז','📍',4,'places'], ['north','צפון','🧭',4,'places'], ['south','דרום','🧭',4,'places'],
+  ['east','מזרח','🧭',5,'places'], ['west','מערב','🧭',5,'places'], ['left','שמאל','⬅️',2,'places'],
+  ['right','ימין','➡️',2,'places'], ['top','למעלה','⬆️',3,'places'], ['bottom','למטה','⬇️',3,'places'],
+  ['inside','בפנים','📥',3,'places'], ['outside','בחוץ','📤',3,'places'], ['near','קרוב','📍',3,'places'],
+  ['far','רחוק','🔭',3,'places'], ['middle','אמצע','🎯',4,'places'], ['side','צד','↔️',4,'places'],
+
+  // מקצועות (I see a ...)
+  ['doctor','רופא','🧑‍⚕️',2,'jobs'], ['nurse','אחות (רפואה)','👩‍⚕️',3,'jobs'], ['cook','טבח','🧑‍🍳',3,'jobs'],
+  ['baker','אופה','🥖',4,'jobs'], ['farmer','חקלאי','🧑‍🌾',3,'jobs'], ['firefighter','כבאי','🧑‍🚒',4,'jobs'],
+  ['soldier','חייל','💂',5,'jobs'], ['painter','צייר','🧑‍🎨',4,'jobs'], ['artist','אמן','🎨',4,'jobs'],
+  ['writer','סופר','✍️',5,'jobs'], ['engineer','מהנדס','🧑‍🔧',5,'jobs'], ['scientist','מדען','🧑‍🔬',5,'jobs'],
+  ['builder','בנאי','👷',4,'jobs'], ['mechanic','מכונאי','🔧',5,'jobs'], ['dentist','רופא שיניים','🦷',4,'jobs'],
+  ['judge','שופט (משפטי)','⚖️',5,'jobs'], ['king','מלך','👑',4,'jobs'], ['queen','מלכה','👑',4,'jobs'],
+  ['chef','שף','👨‍🍳',4,'jobs'], ['waiter','מלצר','🤵',4,'jobs'], ['postman','דוור','📮',4,'jobs'],
+  ['librarian','ספרן','📚',5,'jobs'], ['musician','מוזיקאי','🎵',5,'jobs'], ['actor','שחקן תיאטרון','🎭',4,'jobs'],
+  ['athlete','ספורטאי','🏃',5,'jobs'], ['guard','שומר','💂',5,'jobs'], ['shepherd','רועה','🐑',5,'jobs'],
+  ['fisherman','דייג','🎣',5,'jobs'], ['sailor','מלח','⛵',5,'jobs'], ['cleaner','מנקה','🧹',4,'jobs'],
+  ['tailor','חייט','🧵',5,'jobs'], ['barber','ספר','💈',5,'jobs'], ['gardener','גנן','🌱',4,'jobs'],
+  ['plumber','אינסטלטור','🔧',5,'jobs'], ['electrician','חשמלאי','💡',5,'jobs'], ['lawyer','עורך דין','⚖️',5,'jobs'],
+  ['manager','מנהל','💼',5,'jobs'], ['boss','בוס','👔',4,'jobs'], ['worker','עובד','👷',4,'jobs'],
+  ['guide','מדריך','🧭',5,'jobs'], ['vet','וטרינר','🐶',5,'jobs'], ['priest','כומר','⛪',5,'jobs'],
+  ['rabbi','רב','📖',5,'jobs'], ['pilot','טייס','🧑‍✈️',4,'jobs'], ['dancer','רקדן','💃',4,'jobs'],
+  ['photographer','צלם','📸',5,'jobs'], ['designer','מעצב','🎨',5,'jobs'], ['journalist','עיתונאי','🗞️',5,'jobs'],
+);

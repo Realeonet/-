@@ -1,6 +1,6 @@
 // שירות עבודה: שומר את האפליקציה במכשיר כדי שתעבוד גם בלי אינטרנט.
 // כשמעדכנים את הקבצים, מעלים את מספר הגרסה כדי שהמכשיר יטען את הגרסה החדשה.
-const VERSION = 'tagbur-v5';
+const VERSION = 'tagbur-v6';
 const FILES = [
   './',
   './index.html',
@@ -13,6 +13,10 @@ const FILES = [
   './words-6.js',
   './words-7.js',
   './words-8.js',
+  './words-9.js',
+  './words-10.js',
+  './words-11.js',
+  './words-12.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',

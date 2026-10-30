@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тренажёр Амир</title>
+<style>
+  :root {
+    --bg: #f5f7fb; --card: #ffffff; --text: #1d2433; --muted: #6b7385;
+    --accent: #3b6ef5; --ok: #1f9d55; --bad: #d64545; --border: #dfe4ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141820; --card: #1d2330; --text: #e8ecf5; --muted: #98a2b8;
+      --accent: #6c93ff; --ok: #3fbf74; --bad: #ff6b6b; --border: #2c3445;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141820; --card: #1d2330; --text: #e8ecf5; --muted: #98a2b8;
+    --accent: #6c93ff; --ok: #3fbf74; --bad: #ff6b6b; --border: #2c3445;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 8px 0 16px; }
+  h2 { font-size: 18px; margin: 0 0 12px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+  }
+  .muted { color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+    padding: 12px; text-align: left; width: 100%;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; text-align: center; }
+  button:disabled { opacity: .6; cursor: default; }
+  .opt.correct { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--card)); }
+  .opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 15%, var(--card)); }
+  .passage { background: var(--bg); border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 15px; }
+  .explain { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--bg); font-size: 15px; }
+  .bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+  .bar > div { height: 100%; background: var(--accent); }
+  .row { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .row > button { width: auto; }
+  .opts { display: grid; gap: 8px; margin: 12px 0; }
+  .timer { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--accent); }
+  .hidden { display: none; }
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Тренажёр Амир · английский</h1>
+
+  <!-- МЕНЮ -->
+  <section id="menu">
+    <div class="card">
+      <h2>Тренировка по разделам</h2>
+      <div class="grid">
+        <button data-mode="grammar">Грамматика</button>
+        <button data-mode="vocab">Лексика</button>
+        <button data-mode="restatement">Тот же смысл</button>
+        <button data-mode="reading">Понимание текста</button>
+        <button data-mode="all">Всё подряд</button>
+        <button data-mode="mistakes">Работа над ошибками</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Пробный экзамен</h2>
+      <p class="muted">Все вопросы, 45 минут, ответы и объяснения — в конце.</p>
+      <button class="primary" id="startExam">Начать пробный экзамен</button>
+    </div>
+    <div class="card">
+      <h2>Прогресс</h2>
+      <div id="stats" class="muted"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="resetStats">Сбросить прогресс</button>
+        <button id="themeBtn">Тема: авто</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ВОПРОС -->
+  <section id="quiz" class="hidden">
+    <div class="card">
+      <div class="row">
+        <span class="muted" id="counter"></span>
+        <span class="timer" id="timer"></span>
+      </div>
+      <div class="bar"><div id="progressBar" style="width:0"></div></div>
+      <div id="passage" class="passage hidden"></div>
+      <p id="question" style="font-size:17px;font-weight:500;margin:6px 0"></p>
+      <div class="opts" id="options"></div>
+      <div id="explain" class="explain hidden"></div>
+      <div class="row" style="margin-top:14px">
+        <button id="quitBtn">Выйти в меню</button>
+        <button class="primary" id="nextBtn" disabled>Дальше</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ИТОГ -->
+  <section id="result" class="hidden">
+    <div class="card">
+      <h2 id="resultTitle"></h2>
+      <p id="resultText"></p>
+      <div id="resultReview"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="backMenu">В меню</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="questions.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const STORE = "amirTrainer.v1";
+  const EXAM_MINUTES = 45;
+
+  // ---------- хранилище (ошибки и статистика) ----------
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE)) || { seen: {}, wrong: {} }; }
+    catch (e) { return { seen: {}, wrong: {} }; }
+  }
+  function save(s) { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} }
+  let state = load();
+
+  function record(id, correct) {
+    state.seen[id] = (state.seen[id] || 0) + 1;
+    if (correct) { delete state.wrong[id]; }
+    else { state.wrong[id] = true; }
+    save(state);
+  }
+
+  // ---------- тема ----------
+  const themes = ["auto", "light", "dark"];
+  function applyTheme() {
+    const t = localStorage.getItem("amirTrainer.theme") || "auto";
+    document.documentElement.setAttribute("data-theme", t === "auto" ? "" : t);
+    $("themeBtn").textContent = "Тема: " + ({ auto: "авто", light: "светлая", dark: "тёмная" })[t];
+  }
+  $("themeBtn").onclick = () => {
+    const cur = localStorage.getItem("amirTrainer.theme") || "auto";
+    const next = themes[(themes.indexOf(cur) + 1) % themes.length];
+    try { localStorage.setItem("amirTrainer.theme", next); } catch (e) {}
+    applyTheme();
+  };
+  applyTheme();
+
+  // ---------- экраны ----------
+  const screens = ["menu", "quiz", "result"];
+  function show(name) {
+    screens.forEach((s) => $(s).classList.toggle("hidden", s !== name));
+    window.scrollTo(0, 0);
+  }
+
+  function renderStats() {
+    const total = QUESTIONS.length;
+    const seenIds = Object.keys(state.seen).length;
+    const wrongCount = Object.keys(state.wrong).length;
+    $("stats").innerHTML =
+      "Вопросов в банке: " + total + "<br>Уже встречались: " + seenIds +
+      "<br>Не решены с первого раза (к повтору): " + wrongCount;
+  }
+
+  // ---------- сборка набора ----------
+  function shuffle(a) {
+    a = a.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Для reading вопросы идут группами по тексту, поэтому не перемешиваем их.
+  function buildSet(mode) {
+    if (mode === "all") {
+      const nonReading = shuffle(QUESTIONS.filter((q) => q.section !== "reading"));
+      return nonReading.concat(QUESTIONS.filter((q) => q.section === "reading"));
+    }
+    if (mode === "mistakes") {
+      return shuffle(QUESTIONS.filter((q) => state.wrong[q.id]));
+    }
+    const items = QUESTIONS.filter((q) => q.section === mode);
+    return mode === "reading" ? items : shuffle(items);
+  }
+
+  // ---------- проведение теста ----------
+  let set = [], idx = 0, answers = [], timerId = null, deadline = 0, isExam = false, mode = "";
+
+  function startSession(m, exam) {
+    mode = m; isExam = exam;
+    set = buildSet(m);
+    if (!set.length) { alert("Здесь пока нет вопросов для повтора. Сначала решите несколько заданий."); return; }
+    idx = 0; answers = [];
+    if (isExam) {
+      deadline = Date.now() + EXAM_MINUTES * 60 * 1000;
+      timerId = setInterval(tick, 1000); tick();
+    } else {
+      $("timer").textContent = "";
+    }
+    show("quiz");
+    renderQuestion();
+  }
+
+  function tick() {
+    const left = Math.max(0, deadline - Date.now());
+    const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+    $("timer").textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    if (left <= 0) finish();
+  }
+
+  function renderQuestion() {
+    const q = set[idx];
+    $("counter").textContent = "Вопрос " + (idx + 1) + " из " + set.length;
+    $("progressBar").style.width = ((idx) / set.length * 100) + "%";
+    const p = $("passage");
+    if (q.passage) { p.textContent = q.passage; p.classList.remove("hidden"); }
+    else { p.classList.add("hidden"); }
+    $("question").textContent = q.q;
+    const box = $("options");
+    box.innerHTML = "";
+    q.options.forEach((text, i) => {
+      const b = document.createElement("button");
+      b.className = "opt";
+      b.textContent = String.fromCharCode(65 + i) + ". " + text;
+      b.onclick = () => choose(i);
+      box.appendChild(b);
+    });
+    $("explain").classList.add("hidden");
+    $("nextBtn").disabled = true;
+    $("nextBtn").textContent = idx === set.length - 1 ? (isExam ? "Завершить" : "Готово") : "Дальше";
+    $("nextBtn").onclick = next;
+    $("quitBtn").onclick = () => { if (confirm("Выйти? Текущий результат не сохранится.")) quit(); };
+  }
+
+  function choose(i) {
+    const q = set[idx];
+    const buttons = document.querySelectorAll("#options .opt");
+    if (answers[idx] !== undefined) return;
+    answers[idx] = i;
+    buttons.forEach((b) => b.disabled = true);
+    if (isExam) {
+      buttons[i].classList.add("correct");
+      buttons[i].style.borderStyle = "dashed";
+    } else {
+      const ok = i === q.answer;
+      buttons[i].classList.add(ok ? "correct" : "wrong");
+      buttons[q.answer].classList.add("correct");
+      $("explain").innerHTML = "<b>" + (ok ? "Верно." : "Неверно.") + "</b> " + q.explain;
+      $("explain").classList.remove("hidden");
+      record(q.id, ok);
+    }
+    if (isExam) record(q.id, i === q.answer);
+    $("nextBtn").disabled = false;
+  }
+
+  function next() {
+    if (idx < set.length - 1) { idx++; renderQuestion(); }
+    else finish();
+  }
+
+  function quit() {
+    if (timerId) clearInterval(timerId);
+    timerId = null;
+    renderStats();
+    show("menu");
+  }
+
+  function finish() {
+    if (timerId) clearInterval(timerId);
+    timerId = null;
+    const answered = answers.filter((a) => a !== undefined).length;
+    const correct = set.reduce((n, q, i) => n + (answers[i] === q.answer ? 1 : 0), 0);
+    const pct = Math.round(correct / set.length * 100);
+    $("resultTitle").textContent = isExam ? "Итог пробного экзамена" : "Итог тренировки";
+    $("resultText").innerHTML =
+      "Правильно: <b>" + correct + " из " + set.length + "</b> (" + pct + "%)." +
+      (answered < set.length ? "<br>Ответили на " + answered + " — остальные засчитаны как неверные." : "") +
+      "<br><span class='muted'>Ориентир для уверенности: стабильно 85%+ на смешанных тестах. " +
+      "Реальный Амирнет адаптивный, шкала итогового балла отличается — сверяйте с официальными данными NITE.</span>";
+    const rev = $("resultReview");
+    rev.innerHTML = "";
+    if (isExam || answered) {
+      const wrong = set.filter((q, i) => answers[i] !== q.answer && answers[i] !== undefined);
+      if (wrong.length) {
+        const h = document.createElement("p");
+        h.innerHTML = "<b>Разбор ошибок:</b>";
+        rev.appendChild(h);
+        wrong.forEach((q) => {
+          const d = document.createElement("div");
+          d.className = "explain";
+          d.innerHTML = "<b>" + q.q + "</b><br>Правильно: " + q.options[q.answer] + "<br>" + q.explain;
+          rev.appendChild(d);
+        });
+      }
+    }
+    show("result");
+    renderStats();
+  }
+
+  // ---------- кнопки меню ----------
+  document.querySelectorAll("[data-mode]").forEach((b) => {
+    b.onclick = () => startSession(b.dataset.mode, false);
+  });
+  $("startExam").onclick = () => startSession("all", true);
+  $("resetStats").onclick = () => {
+    if (confirm("Сбросить всю статистику и список ошибок?")) {
+      state = { seen: {}, wrong: {} }; save(state); renderStats();
+    }
+  };
+  $("backMenu").onclick = () => { renderStats(); show("menu"); };
+
+  renderStats();
+  show("menu");
+})();
+</script>
+</body>
+</html>

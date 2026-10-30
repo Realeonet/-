@@ -1,300 +1,162 @@
 // Банк вопросов для тренажёра Амир (английский).
-// Типы разделов: grammar (грамматика), vocab (лексика),
-// restatement (выбор фразы с тем же смыслом), reading (понимание текста).
-// Поле answer — индекс правильного варианта (0..3).
-// Формат приблизительный: актуальную структуру уточняйте на сайте NITE.
+// Уровни: 1 — самые простые, 5 — самые сложные.
+// Секции: g — грамматика, v — лексика, r — тот же смысл, d — понимание текста.
+// Формат каждой записи: [уровень, секция, вопрос, варианты, индекс верного, объяснение, текст(для d)]
+// Структура Амирнета ориентировочная: уточняйте на сайте NITE.
+
+const P_TOM = "Tom gets up at seven. He has a shower, eats breakfast and goes to work by bus. He likes his job because his colleagues are friendly.";
+const P_MARIA = "Maria moved to Haifa last year. At first, she found it difficult to make friends, but she joined a running club. Now she runs with ten people every Saturday.";
+const P_LIB = "The new library opened on Monday. It has three floors, a cafe, and a quiet room for students who need to concentrate. Visitors can borrow up to ten books at a time. Children's activities take place every Saturday morning.";
+const P_WORK = "Many students think that they must choose between work and study. In fact, a growing number of universities offer flexible schedules, including evening and online classes. Experts say that working while studying can teach useful skills, such as time management, although it can also be very tiring.";
+const P_BEES = "Honeybees communicate the location of flowers through a waggle dance. A bee that finds food returns to the hive and moves in a figure-eight pattern. The angle of the dance shows the direction of the food relative to the sun, while the duration of the waggle shows how far away it is. Other bees can then fly directly to the source.";
+const P_REMOTE = "Remote work has become common since the pandemic. Supporters say it saves commuting time and gives employees more flexibility. Critics, however, argue that it makes it harder for new employees to learn from colleagues and can blur the boundary between work and home life. Many firms now adopt a hybrid model, combining office days with home days.";
+const P_NUDGE = "The concept of nudge theory suggests that small changes in the way choices are presented can influence behaviour without restricting freedom. For example, placing healthy food at eye level in a cafeteria tends to increase its sales. Critics, however, question whether such subtle guidance is ethical, since people may not be aware that they are being guided.";
+const P_INFL = "Economists disagree about the causes of inflation. Some blame excessive demand, arguing that when consumers spend more than the economy can produce, prices rise. Others point to rising costs of raw materials and wages. In practice, both factors often interact, which makes it difficult for policymakers to address inflation without side effects.";
+const P_CITY = "The city council has announced plans to build a new cycle lane along the river. The project, which will cost about two million dollars, is expected to take eighteen months. Local shop owners have expressed concern that fewer customers will be able to park nearby. However, the council argues that the lane will reduce traffic and make the area safer for children.";
+const P_BILING = "Many people believe that learning a second language is only useful for travel. However, research suggests that bilingual people often have better memory and are better at switching between tasks. Scientists think this is because their brains practise controlling attention every time they choose between two languages. Furthermore, learning a language can improve understanding of one's own mother tongue.";
 
 window.QUESTIONS = [
-  // ---------- GRAMMAR ----------
-  {
-    id: "g1", section: "grammar",
-    q: "She ___ in London since 2019.",
-    options: ["lives", "has lived", "lived", "is living"],
-    answer: 1,
-    explain: "С «since + момент в прошлом» используем Present Perfect: has lived."
-  },
-  {
-    id: "g2", section: "grammar",
-    q: "If I ___ more time, I would travel more.",
-    options: ["have", "had", "will have", "having"],
-    answer: 1,
-    explain: "Условие 2-го типа (нереальное в настоящем): if + Past Simple, would + глагол."
-  },
-  {
-    id: "g3", section: "grammar",
-    q: "The report, along with the charts, ___ on the desk.",
-    options: ["are", "were", "is", "have been"],
-    answer: 2,
-    explain: "Подлежащее — «the report» (ед. число). «Along with the charts» не меняет согласование."
-  },
-  {
-    id: "g4", section: "grammar",
-    q: "Neither the teachers nor the principal ___ aware of the problem.",
-    options: ["was", "were", "are", "be"],
-    answer: 0,
-    explain: "При neither…nor глагол согласуется с ближайшим подлежащим: the principal → was."
-  },
-  {
-    id: "g5", section: "grammar",
-    q: "I wish I ___ the answer to that question yesterday.",
-    options: ["knew", "had known", "know", "would know"],
-    answer: 1,
-    explain: "Сожаление о прошлом: wish + Past Perfect → had known."
-  },
-  {
-    id: "g6", section: "grammar",
-    q: "By the time we arrived, the film ___.",
-    options: ["had already started", "already started", "has already started", "was already starting"],
-    answer: 0,
-    explain: "Действие, завершившееся раньше другого прошлого действия: Past Perfect."
-  },
-  {
-    id: "g7", section: "grammar",
-    q: "He suggested that she ___ a doctor.",
-    options: ["sees", "see", "to see", "will see"],
-    answer: 1,
-    explain: "После suggest/recommend that + базовая форма глагола (без -s): see."
-  },
-  {
-    id: "g8", section: "grammar",
-    q: "Hardly ___ the door when the phone rang.",
-    options: ["I had closed", "had I closed", "I closed", "did I close"],
-    answer: 1,
-    explain: "После отрицательного наречия hardly в начале предложения — инверсия: had I closed."
-  },
-  {
-    id: "g9", section: "grammar",
-    q: "The museum, ___ was built in 1900, is closed on Mondays.",
-    options: ["that", "which", "what", "where"],
-    answer: 1,
-    explain: "В уточняющем придаточном (с запятыми) «that» не используют — только which/who."
-  },
-  {
-    id: "g10", section: "grammar",
-    q: "Despite ___ tired, she finished the marathon.",
-    options: ["being", "to be", "been", "be"],
-    answer: 0,
-    explain: "После despite/in spite of — герундий: being tired."
-  },
-  {
-    id: "g11", section: "grammar",
-    q: "He is used to ___ early.",
-    options: ["wake up", "waking up", "wake", "woke"],
-    answer: 1,
-    explain: "be used to + -ing (привык к чему-то): waking up."
-  },
-  {
-    id: "g12", section: "grammar",
-    q: "You ___ smoke here; it is strictly forbidden.",
-    options: ["mustn't", "needn't", "don't have to", "might not"],
-    answer: 0,
-    explain: "mustn't = нельзя (запрет). needn't/don't have to = не нужно (отсутствие необходимости)."
-  },
-  {
-    id: "g13", section: "grammar",
-    q: "The meeting has been postponed ___ next week.",
-    options: ["until", "to", "at", "on"],
-    answer: 0,
-    explain: "postpone until/till + время: until next week."
-  },
+  // ===== УРОВЕНЬ 1 — ОСНОВЫ =====
+  [1, "g", "I ___ from Russia.", ["am", "is", "are", "be"], 0, "С I используется am.", null],
+  [1, "g", "They ___ students.", ["is", "are", "am", "be"], 1, "С they используется are.", null],
+  [1, "g", "She ___ to school every day.", ["go", "goes", "going", "gone"], 1, "В 3-м лице ед. числа в Present Simple добавляем -s/-es: goes.", null],
+  [1, "g", "We ___ TV now.", ["watch", "are watching", "watches", "watching"], 1, "now — признак Present Continuous: are watching.", null],
+  [1, "g", "I saw ___ apple on the table.", ["a", "an", "the", "—"], 1, "Перед гласным звуком используем an: an apple.", null],
+  [1, "g", "He has ___ car.", ["a", "an", "the", "—"], 0, "Перед согласным звуком — a: a car.", null],
+  [1, "g", "There ___ three books on the table.", ["is", "are", "be", "am"], 1, "Three books — множественное число: are.", null],
+  [1, "g", "I can't ___ English well yet.", ["speak", "speaks", "speaking", "to speak"], 0, "После can / can't стоит глагол в базовой форме: speak.", null],
+  [1, "g", "Do you ___ coffee?", ["like", "likes", "liking", "to like"], 0, "После do в вопросе — базовая форма: like.", null],
+  [1, "g", "My brother is ___ than me.", ["tall", "taller", "tallest", "more tall"], 1, "Сравнительная степень короткого прилагательного: taller than.", null],
+  [1, "g", "She doesn't ___ rain.", ["like", "likes", "liking", "is liking"], 0, "После doesn't — базовая форма: like.", null],
+  [1, "g", "Yesterday I ___ to the cinema.", ["go", "went", "gone", "going"], 1, "Yesterday — Past Simple, неправильный глагол go → went.", null],
+  [1, "g", "I'll call you ___ the morning.", ["in", "on", "at", "for"], 0, "Говорят in the morning.", null],
+  [1, "g", "How ___ brothers do you have?", ["many", "much", "some", "few"], 0, "С исчисляемыми существительными во множественном числе — many.", null],
+  [1, "g", "We ___ dinner at seven o'clock every day.", ["have", "has", "having", "to have"], 0, "С we — have. Present Simple для регулярных действий.", null],
+  [1, "v", "A place where you borrow books is a ___.", ["shop", "library", "hospital", "station"], 1, "Library — библиотека.", null],
+  [1, "v", "The opposite of 'expensive' is ___.", ["cheap", "heavy", "early", "hot"], 0, "Expensive — дорогой, cheap — дешёвый.", null],
+  [1, "v", "You write on paper with a ___.", ["fork", "pen", "bed", "door"], 1, "Pen — ручка.", null],
+  [1, "v", "On a cold day, you should wear a warm ___.", ["coat", "spoon", "shoe", "window"], 0, "Coat — пальто.", null],
+  [1, "v", "Nice to ___ you!", ["meet", "see", "know", "look"], 0, "При знакомстве говорят Nice to meet you.", null],
+  [1, "v", "The sky is ___ tonight; I can see the stars.", ["cloudy", "clear", "rainy", "wet"], 1, "Clear — ясное небо, без облаков.", null],
+  [1, "d", "What time does Tom get up?", ["6:30", "7:00", "8:00", "9:00"], 1, "Tom gets up at seven.", P_TOM],
+  [1, "d", "How does Tom go to work?", ["by car", "by bus", "on a bike", "on foot"], 1, "He goes to work by bus.", P_TOM],
 
-  // ---------- VOCABULARY ----------
-  {
-    id: "v1", section: "vocab",
-    q: "The company decided to ___ its workforce by 20% because of financial problems.",
-    options: ["reduce", "increase", "improve", "expand"],
-    answer: 0,
-    explain: "Сократить штат — reduce (workforce). Остальные варианты означают «увеличить/улучшить/расширить»."
-  },
-  {
-    id: "v2", section: "vocab",
-    q: "Her explanation was so ___ that everyone understood it at once.",
-    options: ["vague", "clear", "confusing", "complicated"],
-    answer: 1,
-    explain: "Понятное объяснение — clear. Vague = расплывчатое, confusing/complicated = запутанное."
-  },
-  {
-    id: "v3", section: "vocab",
-    q: "The new law will ___ effect next month.",
-    options: ["take", "come", "go", "put"],
-    answer: 0,
-    explain: "Устойчивое сочетание: take effect (вступать в силу)."
-  },
-  {
-    id: "v4", section: "vocab",
-    q: "He is very ___; he never changes his mind, even when he is wrong.",
-    options: ["flexible", "stubborn", "generous", "cheerful"],
-    answer: 1,
-    explain: "Упрямый, не меняющий мнения — stubborn."
-  },
-  {
-    id: "v5", section: "vocab",
-    q: "The scientist's ___ discovery changed medicine forever.",
-    options: ["groundbreaking", "ordinary", "minor", "temporary"],
-    answer: 0,
-    explain: "Groundbreaking = революционный, новаторский. Подходит по смыслу «изменил медицину навсегда»."
-  },
-  {
-    id: "v6", section: "vocab",
-    q: "The price of petrol has ___ dramatically over the last year.",
-    options: ["risen", "raised", "arisen", "arose"],
-    answer: 0,
-    explain: "Rise (непереходный) — rose — risen. Raise (переходный) требует дополнения: raise the price."
-  },
-  {
-    id: "v7", section: "vocab",
-    q: "I'm afraid I can't ___ this noise any longer.",
-    options: ["tolerate", "tolerant", "tolerance", "tolerable"],
-    answer: 0,
-    explain: "После can't нужен глагол: tolerate (терпеть)."
-  },
-  {
-    id: "v8", section: "vocab",
-    q: "The witness ___ the man at the scene of the crime yesterday.",
-    options: ["identified", "identifying", "identity", "identify"],
-    answer: 0,
-    explain: "Маркер «yesterday» → Past Simple: identified."
-  },
+  // ===== УРОВЕНЬ 2 — ПРОШЕДШЕЕ И ЧАСТЫЕ КОНСТРУКЦИИ =====
+  [2, "g", "I have lived here ___ 2015.", ["for", "since", "from", "during"], 1, "С точкой во времени используем since.", null],
+  [2, "g", "She has already ___ the report.", ["finish", "finished", "finishing", "finishes"], 1, "Present Perfect: has + V3 (finished).", null],
+  [2, "g", "When I was young, I ___ to the beach every summer.", ["used to go", "use to go", "was use to go", "am used go"], 0, "Регулярное действие в прошлом: used to + базовая форма. Пишется used.", null],
+  [2, "g", "You ___ wear a seatbelt. It's the law.", ["should", "must", "might", "could"], 1, "Must — обязательство, закон.", null],
+  [2, "g", "It ___ rain later, so take an umbrella just in case.", ["might", "must", "shall", "should"], 0, "Might — возможность, неуверенность.", null],
+  [2, "g", "If it rains, we ___ at home.", ["stay", "will stay", "stayed", "would stay"], 1, "Условие 1-го типа: If + Present Simple, will + глагол.", null],
+  [2, "g", "The letter ___ yesterday.", ["was sent", "sent", "was send", "is sent"], 0, "Пассив в прошедшем времени: was sent.", null],
+  [2, "g", "I'm looking forward to ___ you.", ["see", "seeing", "to see", "saw"], 1, "Look forward to + -ing: seeing.", null],
+  [2, "g", "He ___ here since 2010.", ["has been working", "was working", "is working", "had worked"], 0, "Длительное действие до сих пор: Present Perfect Continuous.", null],
+  [2, "g", "Make sure you ___ the door before you leave.", ["lock", "locking", "locked", "to lock"], 0, "Make sure + you + базовая форма глагола.", null],
+  [2, "g", "She was born ___ 1990 in Kiev.", ["in", "on", "at", "by"], 0, "Years и months — с in: in 1990.", null],
+  [2, "g", "Could you ___ me the way to the station?", ["tell", "say", "speak", "talk"], 0, "Tell someone the way — сказать, как пройти.", null],
+  [2, "g", "He asked me ___ I was from.", ["where", "what", "that", "which"], 0, "Косвенный вопрос: where I was from (порядок слов прямой).", null],
+  [2, "g", "She is taller ___ her sister.", ["than", "then", "that", "as"], 0, "Сравнение: taller than.", null],
+  [2, "g", "I'd rather you ___ tell him.", ["don't", "didn't", "not", "won't"], 1, "После I'd rather для сейчас/будущего используется past form: didn't.", null],
+  [2, "g", "Each of the students ___ a book.", ["has", "have", "are having", "having"], 0, "Each — единственное число: has.", null],
+  [2, "g", "I've been waiting for an hour, and I'm still ___ for the bus.", ["waiting", "wait", "waited", "to wait"], 0, "Ещё продолжается: still waiting.", null],
+  [2, "g", "The film was so ___ that I fell asleep.", ["boring", "bored", "bore", "boredom"], 0, "Фильм скучный — boring. Bored — человек скучает.", null],
+  [2, "v", "The meeting was ___ because the manager was ill.", ["cancelled", "invented", "recovered", "collected"], 0, "Cancelled — отменено.", null],
+  [2, "v", "She made a good ___ on the interviewers.", ["impression", "decision", "mistake", "picture"], 0, "Make an impression — произвести впечатление.", null],
+  [2, "v", "Please ___ a note of my phone number.", ["make", "take", "do", "give"], 1, "Take a note — записать.", null],
+  [2, "v", "He ___ smoking last year.", ["gave", "gave in", "gave up", "gave out"], 2, "Gave up — бросил (привычку).", null],
+  [2, "v", "The rent here is ___ high.", ["extremely", "extreme", "extremity", "extremeness"], 0, "Наречие extremely усиливает прилагательное high.", null],
+  [2, "v", "I can't find my keys; I think I ___ them.", ["lost", "lose", "losing", "have lose"], 0, "Прошедшее: lost (потерял).", null],
+  [2, "v", "The new phone is ___ than the old one.", ["advanced", "more advanced", "most advance", "advancer"], 1, "Сравнительная степень длинного слова: more advanced.", null],
+  [2, "r", "The shop is closed on Sundays.", ["The shop doesn't open on Sundays.", "The shop opens every Sunday.", "The shop is open on Sundays.", "The shop closes on Monday."], 0, "Closed on Sundays = doesn't open on Sundays.", null],
+  [2, "r", "Sorry, I'm late.", ["I apologise for being late.", "I am sorry for not being late.", "I apologise for leaving late.", "I'm late, so I'm not sorry."], 0, "Apologise for being late — извиниться за опоздание.", null],
+  [2, "r", "He started working here in 2010 and still works here.", ["He has worked here since 2010.", "He worked here since 2010.", "He has worked here for 2010.", "He will work here since 2010."], 0, "Present Perfect + since = непрерывное действие до сих пор.", null],
+  [2, "d", "What did Maria join?", ["a choir", "a running club", "a language school", "a cooking class"], 1, "Maria joined a running club.", P_MARIA],
+  [2, "d", "How did Maria feel at the beginning?", ["happy", "bored", "She had difficulty making friends.", "She didn't like Haifa at all."], 2, "At first, she found it difficult to make friends.", P_MARIA],
+  [2, "d", "When does Maria run with the group?", ["Every Monday", "Every Saturday", "Every day", "Never"], 1, "Now she runs with ten people every Saturday.", P_MARIA],
 
-  // ---------- RESTATEMENT ----------
-  {
-    id: "r1", section: "restatement",
-    q: "Choose the sentence that has the SAME meaning as: \"Although he was tired, he kept working.\"",
-    options: [
-      "He kept working, although he was tired.",
-      "He was tired, so he stopped working.",
-      "Being tired, he didn't work.",
-      "He was tired because he kept working."
-    ],
-    answer: 0,
-    explain: "Although = несмотря на то что. Переставить части предложения можно без изменения смысла."
-  },
-  {
-    id: "r2", section: "restatement",
-    q: "Choose the sentence that has the SAME meaning as: \"It's a pity I didn't study harder.\"",
-    options: [
-      "I wish I had studied harder.",
-      "I wish I studied harder.",
-      "I hope I study harder.",
-      "I regret studying harder."
-    ],
-    answer: 0,
-    explain: "Сожаление о прошлом: I wish I had + V3."
-  },
-  {
-    id: "r3", section: "restatement",
-    q: "Choose the sentence that has the SAME meaning as: \"She is too young to vote.\"",
-    options: [
-      "She is young enough to vote.",
-      "She isn't old enough to vote.",
-      "She is not young enough to vote.",
-      "She is old enough to vote."
-    ],
-    answer: 1,
-    explain: "too young to = not old enough to."
-  },
-  {
-    id: "r4", section: "restatement",
-    q: "Choose the sentence that has the SAME meaning as: \"The last time I saw him was in 2015.\"",
-    options: [
-      "I haven't seen him since 2015.",
-      "I didn't see him since 2015.",
-      "I have seen him since 2015.",
-      "I have never seen him in 2015."
-    ],
-    answer: 0,
-    explain: "The last time I saw… = I haven't seen… since…"
-  },
-  {
-    id: "r5", section: "restatement",
-    q: "Choose the sentence that has the SAME meaning as: \"Nobody told me about the change.\"",
-    options: [
-      "Someone told me about the change.",
-      "I wasn't told about the change.",
-      "I told everyone about the change.",
-      "The change was told to me."
-    ],
-    answer: 1,
-    explain: "Nobody told me = I wasn't told (пассивный залог с сохранением смысла)."
-  },
+  // ===== УРОВЕНЬ 3 — УСЛОВНЫЕ, ПАССИВ, СВЯЗКИ =====
+  [3, "g", "If I had known about the party, I ___ come.", ["would", "would have", "will", "had"], 1, "Условие 3-го типа: would have + V3.", null],
+  [3, "g", "The book ___ by millions of people is a classic.", ["read", "reading", "to read", "is reading"], 0, "Сокращённое пассивное определение: the book (which is) read by…", null],
+  [3, "g", "I'd like you ___ this letter for me.", ["to post", "posting", "post", "posted"], 0, "Would like + someone + to + глагол.", null],
+  [3, "g", "Not only ___ late, but he also forgot the documents.", ["he was", "was he", "he is", "is he"], 1, "Not only в начале предложения требует инверсии: was he late.", null],
+  [3, "g", "It's high time we ___ going.", ["start", "started", "will start", "starting"], 1, "It's high time + Past Simple (с оттенком «пора уже»): started.", null],
+  [3, "g", "She insisted ___ paying for dinner.", ["on", "in", "at", "for"], 0, "Insist on + -ing: настаивать на чём-то.", null],
+  [3, "g", "He ___ have left by now; his car is gone.", ["must", "might", "can", "would"], 0, "Must have + V3 — уверенный вывод о прошлом.", null],
+  [3, "g", "The more you practise, ___ you will become.", ["the better", "more good", "the best", "the good"], 0, "The more…, the better — чем больше…, тем лучше.", null],
+  [3, "g", "Had she ___ earlier, she would have caught the bus.", ["left", "leave", "leaves", "leaving"], 0, "Инверсия условного предложения: Had she left.", null],
+  [3, "g", "The teacher made us ___ the exercise again.", ["do", "to do", "doing", "done"], 0, "Make + someone + базовая форма без to.", null],
+  [3, "g", "I wish I ___ speak French better.", ["can", "could", "will", "would"], 1, "Wish + could — желание, нереальное в настоящем.", null],
+  [3, "g", "By next June, I ___ here for ten years.", ["will be working", "will have been working", "work", "worked"], 1, "Future Perfect Continuous: will have been working.", null],
+  [3, "g", "Scarcely had I arrived ___ it started to rain.", ["when", "than", "that", "as"], 0, "Scarcely…when — едва…как.", null],
+  [3, "g", "Were I ___ you, I would apologise.", ["am", "was", "be", "been"], 2, "Инверсия в условном предложении с сослагательным наклонением: Were I you (be).", null],
+  [3, "g", "The committee recommended that the plan ___ immediately.", ["be implemented", "is implemented", "implemented", "will implement"], 0, "После recommended that — базовая форма be implemented.", null],
+  [3, "v", "Their argument ___ into a fight.", ["turned", "went", "came", "got"], 0, "Turn into — превратиться во что-то.", null],
+  [3, "v", "The company is trying to ___ new customers.", ["attract", "attend", "attach", "attack"], 0, "Attract customers — привлекать клиентов.", null],
+  [3, "v", "The documents must be ___ by Friday.", ["submitted", "submitting", "submitter", "submission"], 0, "Submit — подать (документы). Passive: submitted.", null],
+  [3, "v", "The team ___ the match 3–1.", ["won", "beat", "defeated", "gained"], 0, "Won the match. Beat нужно дополнение без слова match: beat them.", null],
+  [3, "r", "He is too busy to help us.", ["He is so busy that he can't help us.", "He is busy enough to help us.", "He is not busy so he can help us.", "He is busy but he helps us."], 0, "Too…to = so…that…can't.", null],
+  [3, "r", "Despite the rain, we enjoyed the trip.", ["We didn't enjoy the trip because of the rain.", "Although it rained, we enjoyed the trip.", "The rain prevented us from enjoying the trip.", "The rain made us enjoy the trip."], 1, "Despite the rain = although it rained.", null],
+  [3, "r", "You must not park here.", ["You aren't allowed to park here.", "You don't have to park here.", "You might park here.", "You should park here."], 0, "Must not = запрещено, aren't allowed to.", null],
+  [3, "d", "What do many students think?", ["They can study online only.", "They have to choose between work and study.", "Universities are closing.", "Work is unnecessary."], 1, "Многие думают, что нужно выбирать между работой и учёбой.", P_WORK],
+  [3, "d", "What does the passage say about working while studying?", ["It is always easy.", "It can teach useful skills but may be tiring.", "It is forbidden.", "It never helps."], 1, "В тексте: полезные навыки, но может быть утомительно.", P_WORK],
+  [3, "d", "When did the library open?", ["On Sunday", "On Monday", "On Saturday", "Last year"], 1, "The new library opened on Monday.", P_LIB],
+  [3, "d", "What is the quiet room for?", ["Children's games", "Concentrating", "Eating", "Meeting the mayor"], 1, "Тихая комната — для тех, кому нужно сосредоточиться.", P_LIB],
 
-  // ---------- READING ----------
-  {
-    id: "rd1", section: "reading",
-    passage: "Many people believe that learning a second language is only useful for travel. However, research suggests that bilingual people often have better memory and are better at switching between tasks. Scientists think this is because their brains practise controlling attention every time they choose between two languages. Furthermore, learning a language can improve understanding of one's own mother tongue, since students begin to notice grammar patterns they had never thought about before.",
-    q: "According to the passage, what do many people wrongly believe?",
-    options: [
-      "Languages are very hard to learn.",
-      "Second languages are useful only for travel.",
-      "Bilingual people have a poor memory.",
-      "Grammar is unimportant."
-    ],
-    answer: 1,
-    explain: "В тексте прямо сказано: многие считают, что второй язык нужен только для путешествий."
-  },
-  {
-    id: "rd2", section: "reading",
-    passage: "Many people believe that learning a second language is only useful for travel. However, research suggests that bilingual people often have better memory and are better at switching between tasks. Scientists think this is because their brains practise controlling attention every time they choose between two languages. Furthermore, learning a language can improve understanding of one's own mother tongue, since students begin to notice grammar patterns they had never thought about before.",
-    q: "Why do scientists think bilingual people have better attention control?",
-    options: [
-      "They study for more hours.",
-      "Their brains practise choosing between two languages.",
-      "They travel more often.",
-      "They forget their mother tongue."
-    ],
-    answer: 1,
-    explain: "Ответ — в предложении про «brains practise controlling attention every time they choose between two languages»."
-  },
-  {
-    id: "rd3", section: "reading",
-    passage: "Many people believe that learning a second language is only useful for travel. However, research suggests that bilingual people often have better memory and are better at switching between tasks. Scientists think this is because their brains practise controlling attention every time they choose between two languages. Furthermore, learning a language can improve understanding of one's own mother tongue, since students begin to notice grammar patterns they had never thought about before.",
-    q: "What does the passage say about learning a language and one's mother tongue?",
-    options: [
-      "It can make the mother tongue harder to understand.",
-      "It can improve understanding of the mother tongue.",
-      "It has no effect on the mother tongue.",
-      "It replaces the mother tongue."
-    ],
-    answer: 1,
-    explain: "Слово «Furthermore» добавляет ещё один плюс: улучшается понимание родного языка."
-  },
-  {
-    id: "rd4", section: "reading",
-    passage: "The city council has announced plans to build a new cycle lane along the river. The project, which will cost about two million dollars, is expected to take eighteen months. Local shop owners have expressed concern that fewer customers will be able to park nearby. However, the council argues that the lane will reduce traffic and make the area safer for children.",
-    q: "What is the main purpose of the passage?",
-    options: [
-      "To criticise the council's budget.",
-      "To report a planned project and the reactions to it.",
-      "To advertise a new shop.",
-      "To explain how to park a car."
-    ],
-    answer: 1,
-    explain: "Текст описывает проект, его стоимость и сроки, а также мнения владельцев магазинов и совета."
-  },
-  {
-    id: "rd5", section: "reading",
-    passage: "The city council has announced plans to build a new cycle lane along the river. The project, which will cost about two million dollars, is expected to take eighteen months. Local shop owners have expressed concern that fewer customers will be able to park nearby. However, the council argues that the lane will reduce traffic and make the area safer for children.",
-    q: "What concern do the shop owners have?",
-    options: [
-      "The project is too cheap.",
-      "Customers may find it harder to park.",
-      "The river is dangerous.",
-      "The lane is too short."
-    ],
-    answer: 1,
-    explain: "Владельцы беспокоятся, что клиентам станет труднее парковаться рядом."
-  },
-  {
-    id: "rd6", section: "reading",
-    passage: "The city council has announced plans to build a new cycle lane along the river. The project, which will cost about two million dollars, is expected to take eighteen months. Local shop owners have expressed concern that fewer customers will be able to park nearby. However, the council argues that the lane will reduce traffic and make the area safer for children.",
-    q: "According to the council, what is one benefit of the lane?",
-    options: [
-      "It will increase shop prices.",
-      "It will reduce traffic and improve safety for children.",
-      "It will close the river.",
-      "It will last only one month."
-    ],
-    answer: 1,
-    explain: "Совет утверждает, что полоса уменьшит пробки и сделает район безопаснее для детей."
-  }
+  // ===== УРОВЕНЬ 4 — СЛОЖНЫЕ КОНСТРУКЦИИ =====
+  [4, "g", "No sooner had we sat down ___ the waiter came.", ["than", "then", "when", "as"], 0, "No sooner…than — не успели…как.", null],
+  [4, "g", "Had I known you were coming, I ___ a cake.", ["would bake", "would have baked", "baked", "have baked"], 1, "Смешанное условие: Had I known → would have baked.", null],
+  [4, "g", "The suspect, ___ the police had been looking for, turned himself in.", ["whom", "who", "which", "whose"], 0, "Whom — дополнение в придаточном (police looked for whom).", null],
+  [4, "g", "It's essential that every applicant ___ a medical form.", ["submits", "submit", "submitted", "will submit"], 1, "После essential that — базовая форма: submit.", null],
+  [4, "g", "He is said ___ the award last year.", ["to have won", "having won", "to win", "winning"], 0, "Is said to have + V3 — как считают, он получил.", null],
+  [4, "g", "Not until the storm had passed ___ outside.", ["did they go", "they went", "went they", "they did go"], 0, "Not until…did they go — инверсия после Not until.", null],
+  [4, "g", "Let's go to the beach, ___?", ["shall we", "will we", "do we", "don't we"], 0, "Let's … shall we? — правильный хвостик.", null],
+  [4, "g", "The company has ___ a decision about the merger.", ["come to", "come up with", "come across", "come about"], 0, "Come to a decision — прийти к решению.", null],
+  [4, "g", "Had the government acted sooner, the crisis ___ so severe.", ["would not have been", "would not be", "had not been", "was not"], 0, "Инверсия условного предложения 3-го типа: would not have been.", null],
+  [4, "g", "Despite ___ the problem, the team didn't give up.", ["recognising", "recognised", "to recognise", "recognise"], 0, "Despite + -ing: recognising.", null],
+  [4, "g", "The shelves ___ with books when I entered.", ["were stacked", "had stacked", "are stacked", "stacking"], 0, "Пассив в прошедшем времени: were stacked.", null],
+  [4, "g", "___ the rules, he was fined.", ["Ignoring", "Ignored", "Ignore", "Ignores"], 0, "Причастие действующего лица: Ignoring the rules (не обращая внимания на правила).", null],
+  [4, "g", "Whether ___ or not, we will go.", ["it rains", "it raining", "it rain", "will it rain"], 0, "Whether…or not — Present Simple в придаточном о будущем.", null],
+  [4, "g", "Her eye ___ detail made her a brilliant editor.", ["for", "on", "to", "at"], 0, "Have an eye for detail — иметь нюх на детали.", null],
+  [4, "v", "His explanation was ___ and hard to follow.", ["convoluted", "convenient", "confident", "contented"], 0, "Convoluted — запутанный, витиеватый.", null],
+  [4, "v", "The government ___ the new tax after public protests.", ["withdrew", "withdrawn", "withdraw", "withdrawing"], 0, "Withdraw — отменить. Past Simple: withdrew.", null],
+  [4, "v", "The evidence was ___; it couldn't be disputed.", ["irrefutable", "irrelevant", "irregular", "irresponsible"], 0, "Irrefutable — неопровержимый.", null],
+  [4, "v", "The actor's performance was truly ___.", ["outstanding", "outdated", "outcast", "outside"], 0, "Outstanding — выдающийся.", null],
+  [4, "v", "We need to ___ a solution before the deadline.", ["devise", "devote", "deviate", "depart"], 0, "Devise a solution — придумать решение.", null],
+  [4, "v", "Stop ___ and listen to me!", ["to be talking", "talking", "talk", "talked"], 1, "Stop + -ing: прекратить делать что-то. Stop talking.", null],
+  [4, "r", "Although it was expensive, we bought it.", ["Expensive as it was, we bought it.", "Expensive as it were, we didn't buy it.", "Being expensive, we did buy it not.", "It was expensive so we bought it."], 0, "Инверсия с as: Expensive as it was (несмотря на то что).", null],
+  [4, "r", "The report was written by Kate.", ["Kate wrote the report.", "Kate was writing the report.", "The report wrote Kate.", "Kate had been written the report."], 0, "Пассив → актив: Kate wrote the report.", null],
+  [4, "r", "I didn't know he was ill until yesterday.", ["It was only yesterday that I found out he was ill.", "I know he was ill yesterday.", "I found out he was ill and I didn't.", "Yesterday I didn't know he was ill."], 0, "Until yesterday → It was only yesterday that…", null],
+  [4, "d", "What does the duration of the waggle indicate?", ["direction", "distance", "food type", "time of day"], 1, "Длительность танца показывает расстояние.", P_BEES],
+  [4, "d", "What do other bees do after watching the dance?", ["They ignore the dancer.", "They fly directly to the food.", "They build a new hive.", "They dance too, without flying."], 1, "Пчёлы сразу летят к источнику.", P_BEES],
+  [4, "d", "What is one criticism of remote work?", ["It is too expensive for companies.", "New employees find it harder to learn from colleagues.", "It increases commuting time.", "Employees never like it."], 1, "Критики говорят, что новым сотрудникам сложнее учиться у коллег.", P_REMOTE],
+  [4, "d", "What is the hybrid model?", ["Working only in the office", "Working only from home", "A mix of office and home work", "Working at night"], 2, "Hybrid — сочетание офиса и дома.", P_REMOTE],
+
+  // ===== УРОВЕНЬ 5 — ЭКЗАМЕНАЦИОННЫЙ УРОВЕНЬ =====
+  [5, "g", "Only when the results were published ___ the scale of the problem.", ["did they realise", "they realised", "realised they", "they did realise"], 0, "Only when…did they realise — инверсия после Only when.", null],
+  [5, "g", "Were it not for her help, we ___ finished on time.", ["would not have", "would not", "had not", "did not have"], 0, "Were it not for… — смешанный сослагательный оборот, would not have finished.", null],
+  [5, "g", "The building is ___ to be over 300 years old.", ["believed", "believing", "believer", "belief"], 0, "Is believed to be — считается, что.", null],
+  [5, "g", "It was not until 2010 ___ the law changed.", ["that", "which", "when", "where"], 0, "Конструкция it was not until…that.", null],
+  [5, "g", "The sooner you ___ the forms, the sooner we can process your application.", ["return", "returned", "will return", "to return"], 0, "В придаточном времени — Present Simple: return.", null],
+  [5, "g", "He would rather ___ at home than go out tonight.", ["stay", "stays", "stayed", "staying"], 0, "Would rather + базовая форма: stay.", null],
+  [5, "g", "Rarely ___ such a talented young musician.", ["have I met", "I have met", "I met", "did I met"], 0, "Rarely + инверсия: have I met.", null],
+  [5, "g", "Provided that you ___ the deadline, you will receive a discount.", ["meet", "will meet", "met", "meeting"], 0, "Provided that + Present Simple для будущего.", null],
+  [5, "g", "The deal, ___ was signed in March, collapsed in June.", ["which", "who", "whose", "when"], 0, "Неограниченное определительное придаточное с which для вещей.", null],
+  [5, "g", "Had I realised the difficulty, I ___ taken the job.", ["wouldn't have", "wouldn't", "hadn't", "didn't"], 0, "Инверсия условного предложения 3-го типа: wouldn't have taken.", null],
+  [5, "g", "Not for a moment ___ that she would win.", ["did I think", "I thought", "thought I", "I did think"], 0, "Not for a moment + инверсия: did I think.", null],
+  [5, "g", "Scarcely any of the passengers ___ injured.", ["were", "was", "has been", "is"], 0, "Any of + plural → were.", null],
+  [5, "v", "The two countries reached a ___ after months of talks.", ["compromise", "comprise", "compromising", "compromised"], 0, "Compromise — компромисс.", null],
+  [5, "v", "The data were ___ to ensure accuracy.", ["verified", "verdict", "verbose", "verity"], 0, "Verify — проверить подлинность.", null],
+  [5, "v", "The manager tried to ___ the conflict between the two employees.", ["mediate", "meditate", "mediocre", "medicate"], 0, "Mediate — посредничать, урегулировать.", null],
+  [5, "v", "The scientist ___ his theory with new evidence.", ["substantiated", "substituted", "substance", "substantial"], 0, "Substantiate — подтвердить доказательствами.", null],
+  [5, "v", "The house was ___ with antique furniture.", ["furnished", "furniture", "furnace", "furlong"], 0, "Furnish — обставить мебелью.", null],
+  [5, "v", "His ___ remarks offended several guests.", ["tactless", "tactful", "tactile", "tactic"], 0, "Tactless — бестактный.", null],
+  [5, "v", "The plan was ___ by lack of funding.", ["hampered", "hampering", "hamper", "hampers"], 0, "Be hampered by — быть затруднённым чем-то.", null],
+  [5, "v", "She was ___ with the results; she had never expected such success.", ["elated", "elevated", "elaborate", "eloquent"], 0, "Elated — в восторге.", null],
+  [5, "r", "The project was so complex that few people understood it.", ["The project was too complex for most people to understand.", "The project was simple for most people.", "Few people understood it because it was simple.", "The project was complex, but everybody understood it."], 0, "So…that few = too…for most people to.", null],
+  [5, "r", "I'm not sure whether he will come.", ["He may or may not come.", "He definitely will come.", "He never comes.", "He came yesterday."], 0, "Не уверен — may or may not.", null],
+  [5, "r", "Her failure to act cost the company dearly.", ["Because she failed to act, the company suffered greatly.", "She acted and the company gained a lot.", "The company failed to act dearly.", "She cost the company dearly by acting."], 0, "Failure to act → because she failed to act.", null],
+  [5, "d", "What is the main idea of the passage?", ["Governments should ban unhealthy food.", "Small changes in presentation can influence choices.", "People always know when they are manipulated.", "Cafeterias should stop selling healthy food."], 1, "Главная мысль: мелкие изменения в подаче влияют на выбор.", P_NUDGE],
+  [5, "d", "What do critics question?", ["Whether healthy food is tasty.", "Whether nudging is ethical.", "Whether cafeterias are profitable.", "Whether people need food."], 1, "Критики спрашивают, этично ли такое мягкое влияние.", P_NUDGE],
+  [5, "d", "Why is inflation difficult to control, according to the passage?", ["Economists agree on its causes.", "Demand and costs often interact.", "Prices never rise.", "Wages are fixed by law."], 1, "Факторы часто взаимодействуют.", P_INFL],
+  [5, "d", "What is one cause of inflation mentioned?", ["Falling demand", "Rising costs of raw materials", "Lower taxes on food", "Too many workers"], 1, "Рост стоимости сырья — одна из причин.", P_INFL]
 ];

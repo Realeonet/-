@@ -1,0 +1,49 @@
+# Конфиг пенсионного модуля. Меняйте здесь тикеры, пресеты треков и колонки импорта.
+#
+# ВАЖНО: тикеры ниже нужно проверить в источнике данных (Yahoo Finance через yfinance).
+# Помечено «проверить» — не подтверждено. Тикер TASE для самой биржи здесь не используется.
+
+# Курс USD/ILS (шекелей за доллар) для пересчёта зарубежной части.
+usd_ils = "USDILS=X"  # проверить
+
+# Прокси по классам активов (класс → тикер). Пустая строка = прокси нет.
+[proxies]
+israel_equity = "^TA125.TA"   # TA-125 — проверить символ в yfinance
+foreign_equity = "ACWI"       # iShares MSCI ACWI, в USD
+foreign_bonds = "AGG"         # предложено, не было в ТЗ — проверить и при желании заменить
+israel_bonds = ""             # надёжного бесплатного тикера нет: доходность 0 + предупреждение
+
+# Треки. preset — веса в процентах (сумма 100). Если preset не задан — веса вводятся вручную
+# или берутся из импорта состава (старше 45 дней — предупреждение).
+[tracks.sp500]
+label = "מסלול מחקה מדד S&P 500 — трек, копирующий S&P 500"
+preset = { israel_equity = 0, foreign_equity = 100, israel_bonds = 0, foreign_bonds = 0, cash_other = 0 }
+proxies = { foreign_equity = "^GSPC" }
+
+[tracks.stocks]
+label = "מסלול מניות — трек акций"
+
+[tracks.general]
+label = "מסלול כללי — общий трек"
+
+[tracks.age_under_50]
+label = "מסלול לפי גיל: עד 50 — до 50 лет"
+
+[tracks.age_50_60]
+label = "מסלול לפי גיל: 50–60 — 50–60 лет"
+
+[tracks.age_60_plus]
+label = "מסלול לפי גיל: 60+ — 60 лет и старше"
+
+[tracks.other]
+label = "אחר — другое (ручной ввод)"
+
+# Соответствие колонок CSV-импорта (ключ — внутреннее имя, значение — заголовок в файле).
+[columns]
+period = "period"
+return_pct = "return_pct"
+israel_equity = "israel_equity_pct"
+foreign_equity = "foreign_equity_pct"
+israel_bonds = "israel_bonds_pct"
+foreign_bonds = "foreign_bonds_pct"
+cash_other = "cash_other_pct"

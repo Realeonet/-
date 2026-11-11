@@ -1,0 +1,8 @@
+streamlit==1.67.0
+sqlalchemy==2.1.8
+pandas==3.0.5
+yfinance==1.8.0
+cryptography
+plotly
+python-dotenv
+pytest

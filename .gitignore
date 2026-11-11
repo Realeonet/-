@@ -83,3 +83,13 @@ lint/generated/
 lint/outputs/
 lint/tmp/
 # lint/reports/
+
+# --- личный учёт инвестиций ---
+.env
+.venv/
+data/
+*.db
+*.fbk
+backups/
+__pycache__/
+.pytest_cache/

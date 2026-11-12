@@ -122,3 +122,35 @@ def weights_stale(as_of: date | None, today: date) -> bool:
     if as_of is None:
         return True
     return (today - as_of).days > STALE_WEIGHTS_DAYS
+
+
+def weights_from_exposures(stock_pct: Decimal, foreign_pct: Decimal) -> dict[str, Decimal]:
+    """ОРИЕНТИРОВОЧНЫЕ веса 5 классов из официальных экспозиций трека (גמל-נט / פנסיה-נט).
+
+    Официальные данные дают только: долю акций и долю зарубежных активов. Разбивки
+    «акции Израиль / акции за рубежом» в них нет, поэтому принято допущение:
+    доля зарубежных среди акций такая же, как во всём портфеле. Всё, что не акции и не
+    зарубежное, отнесено к израильским облигациям (там же кэш и неторгуемые активы).
+    Экспозиции выше 100% (деривативы) обрезаются до 100%.
+    """
+    s = min(max(Decimal(stock_pct), ZERO), HUNDRED)
+    f = min(max(Decimal(foreign_pct), ZERO), HUNDRED)
+    foreign_equity = s * f / HUNDRED
+    israel_equity = s - foreign_equity
+    foreign_bonds = min(f - foreign_equity, HUNDRED - s)
+    israel_bonds = HUNDRED - s - foreign_bonds
+    return {
+        "israel_equity": israel_equity,
+        "foreign_equity": foreign_equity,
+        "israel_bonds": israel_bonds,
+        "foreign_bonds": foreign_bonds,
+        "cash_other": ZERO,
+    }
+
+
+def hedge_from_exposures(foreign_pct: Decimal, fx_pct: Decimal) -> Decimal:
+    """Доля валютного хеджа зарубежной части, %: 1 − (валютная экспозиция / зарубежная экспозиция)."""
+    if foreign_pct <= 0:
+        return ZERO
+    ratio = Decimal(fx_pct) / Decimal(foreign_pct)
+    return min(max(ONE - ratio, ZERO), ONE) * HUNDRED

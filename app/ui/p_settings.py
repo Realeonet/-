@@ -8,6 +8,7 @@ import streamlit as st
 
 from app.backup import restore_blob, write_backup_file
 from app.db import FxPoint, Owner, get_setting, set_setting
+from app.domain.money import D
 from app.security import MIN_PASSWORD_LENGTH, hash_password, verify_password
 from app.ui.common import (Session, cfg, cfg_set, dec_input, flash, market, offline, parse_dec, runtime, show_flash,
                            table, today)
@@ -152,6 +153,103 @@ def _tab_backup() -> None:
             st.error(str(exc))
 
 
+def _phone_snapshot() -> dict:
+    from app.db import Asset
+    from app.domain.pension import PRODUCT_TYPES
+    from app.domain.tax_il import net_of_tax
+    from app.services.dividends import forecast
+    from app.services.phone_sync import build_snapshot, phone_settings
+    from app.services.portfolio import load_positions
+    from app.ui.common import DEFAULTS, tax_rate
+    from app.ui.pension_data import compute, load_accounts
+
+    m, day = market(), today()
+    pension = []
+    for acc in load_accounts():
+        view, _error = compute(acc, m, day)
+        balance = view.balance_today if view else acc.balance_ils
+        pension.append({
+            "owner": acc.owner.name, "product": PRODUCT_TYPES[acc.product_type].split(" — ")[0],
+            "fund": acc.fund_name, "balance": format(balance, "f"),
+            "asOf": (view.last_day if view and view.last_day else acc.balance_date).isoformat(),
+        })
+    with Session() as s:
+        positions = load_positions(s, m, day)
+        asset_map = {a.id: a for a in s.query(Asset).all()}
+        fc = forecast(asset_map, positions, m, day)
+        rate = tax_rate()
+        dividends = {
+            "yearNetIls": format(net_of_tax(sum((f.gross_year_ils for f in fc), D("0")), rate), "f"),
+            "yearNetUsd": format(net_of_tax(sum((f.gross_year_usd for f in fc), D("0")), rate), "f"),
+        }
+        return build_snapshot(s, m, day, phone_settings(s, DEFAULTS), pension, dividends)
+
+
+def _tab_phone() -> None:
+    from app.services import phone_sync
+
+    st.markdown("Приложение на телефоне работает само по себе, а данные получает от компьютера зашифрованным файлом. "
+                "Покупки, записанные на телефоне, возвращаются сюда таким же файлом.")
+    phrase = st.text_input("Парольная фраза для файлов обмена", type="password", key="ph_phrase",
+                           help="Не короче 8 символов. Её же нужно будет ввести на телефоне при загрузке файла.")
+    st.markdown("**1. Создать файл для телефона**")
+    st.caption("В файл попадают места хранения, активы с ценами, открытые лоты, курсы, оценка пенсии и настройки правил.")
+    if st.button("Создать файл для телефона"):
+        try:
+            blob = phone_sync.encrypt_json(_phone_snapshot(), phrase)
+        except ValueError as exc:
+            st.error(str(exc))
+        else:
+            st.session_state["ph_blob"] = blob
+    if st.session_state.get("ph_blob"):
+        st.download_button("⬇️ Скачать файл", st.session_state["ph_blob"], f"dlya-telefona-{today():%Y%m%d}.finphone",
+                           "application/octet-stream")
+        st.caption("Перенесите файл на телефон (Google Drive, кабель или письмо себе). На телефоне: "
+                   "«Ещё → Обмен с компьютером → Загрузить».")
+    st.markdown("**2. Принять покупки с телефона**")
+    upload = st.file_uploader("Файл с телефона (.finphone)", type=["finphone"], key="ph_upload")
+    if upload is not None and st.button("Принять покупки"):
+        try:
+            payload = phone_sync.decrypt_json(upload.getvalue(), phrase)
+            days = [date_from(item.get("buyDate")) for item in payload.get("lots", [])]
+            days = [d for d in days if d]
+            if days:
+                from app.ui.common import ensure_fx
+
+                warning = ensure_fx(min(days), {str(i.get("currency") or "USD") for i in payload["lots"]} | {"USD"})
+                if warning:
+                    st.warning(f"Курсы Банка Израиля не обновились: {warning}")
+            with Session() as s:
+                report = phone_sync.apply_phone_file(s, market(), payload)
+                s.commit()
+        except ValueError as exc:
+            st.error(str(exc))
+        else:
+            text = f"Принято покупок: {report.lots}, уже были приняты раньше: {report.skipped}."
+            if report.created_assets:
+                text += " Созданы активы: " + ", ".join(report.created_assets) + " — проверьте их карточки."
+            if report.created_custodians:
+                text += " Созданы места: " + ", ".join(report.created_custodians) + "."
+            (st.warning if report.errors else st.success)(text)
+            for err in report.errors:
+                st.error(err)
+            st.caption("Лоты получили официальный курс Банка Израиля на дату покупки. Создайте новый файл для "
+                       "телефона, чтобы телефон узнал, что покупки приняты.")
+    st.divider()
+    st.caption("Телефонная версия — сокращённая: капитал, позиции, места, запись покупок, симулятор продажи, "
+               "наследство США и правила. Цены акций и ETF и официальные курсы она берёт из этого файла, "
+               "а крипту, металлы и рыночный курс доллара обновляет сама.")
+
+
+def date_from(text):  # noqa: ANN001, ANN201
+    from datetime import date
+
+    try:
+        return date.fromisoformat(str(text))
+    except ValueError:
+        return None
+
+
 def _tab_password() -> None:
     with st.form("pw"):
         old = st.text_input("Текущий пароль", type="password")
@@ -184,8 +282,8 @@ def render() -> None:
     st.title("Настройки")
     show_flash()
     settings = runtime()[0]
-    tabs = st.tabs(["Параметры", "Владельцы", "Курсы и данные", "Бэкап", "Пароль"])
-    for tab, fn in zip(tabs, (_tab_params, _tab_owners, _tab_data, _tab_backup, _tab_password)):
+    tabs = st.tabs(["Параметры", "Владельцы", "Курсы и данные", "Бэкап", "Телефон", "Пароль"])
+    for tab, fn in zip(tabs, (_tab_params, _tab_owners, _tab_data, _tab_backup, _tab_phone, _tab_password)):
         with tab:
             fn()
     st.caption(f"База данных: `{settings.db_path}`")

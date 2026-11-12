@@ -245,7 +245,11 @@ def table(rows: list[dict], height: int | None = None) -> None:
     if not rows:
         st.caption("Нет данных.")
         return
-    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch", height=height or "auto")
+    frame = pd.DataFrame(rows)
+    for column in frame.columns:  # смешанные типы (число и «—») приводим к тексту, иначе таблица не строится
+        if frame[column].map(type).nunique() > 1:
+            frame[column] = frame[column].astype(str)
+    st.dataframe(frame, hide_index=True, width="stretch", height=height or "auto")
 
 
 def ils(v: Decimal | None) -> str:

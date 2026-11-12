@@ -9,7 +9,7 @@ from decimal import Decimal
 import pandas as pd
 import streamlit as st
 
-from app.db import Asset, Custodian, Disposal, Lot
+from app.db import Asset, Disposal, Lot
 from app.domain import minkin
 from app.domain.money import HUNDRED, ZERO
 from app.domain.risk import (FeeSchedule, cheapest_venues, consolidation_saving, debt_vs_invest, estate_status,

@@ -1,0 +1,16 @@
+# Настройки Streamlit для домашнего использования.
+[server]
+headless = true
+address = "0.0.0.0"   # доступ из домашней сети (телефон, другой компьютер)
+port = 8501
+maxUploadSize = 50
+
+[browser]
+gatherUsageStats = false   # ничего не отправлять разработчикам Streamlit
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = false
+
+[theme]
+primaryColor = "#2a78d6"

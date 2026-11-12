@@ -176,3 +176,65 @@ def test_first_run_password_and_login(data_dir):
     fresh.text_input[0].input("long-enough-1")
     fresh.button[0].click().run()
     assert not fresh.exception and fresh.session_state["auth"] is True
+
+
+def test_create_metal_asset_and_buy_by_weight(data_dir):
+    sf = seed(data_dir)
+    at = page("p_ops", "render").run()
+    at.radio(key="na_class").set_value("metal").run()
+    at.selectbox(key="na_metal").set_value("XAG").run()
+    at.text_input(key="na_f_metal_symbol").input("СЕРЕБРО")
+    at.text_input(key="na_f_metal_adj").input("-5")
+    at.button(key="na_submit").click().run()
+    assert not at.exception and not at.error, [e.value for e in at.error]
+    with sf() as s:
+        silver = s.query(Asset).filter_by(symbol="СЕРЕБРО").one()
+        assert (silver.asset_class, silver.price_source, silver.source_id) == ("metal", "metal", "XAG")
+        assert silver.valuation_adj_pct == D(-5)
+        safe = Custodian(name="Сейф", kind="physical", owner_id=s.query(Owner).first().id)
+        s.add(safe)
+        s.commit()
+        silver_id, safe_name = silver.id, "Сейф · Леонид"
+
+    at = page("p_ops", "render").run()
+    asset_box = at.selectbox(key="buy_asset")
+    asset_box.set_value(next(o for o in asset_box.options if o.startswith("СЕРЕБРО"))).run()
+    cust_box = at.selectbox(key="buy_cust")
+    cust_box.set_value(next(o for o in cust_box.options if o == safe_name)).run()
+    at.text_input(key="buy_weight").input("10")
+    at.selectbox(key="buy_unit").set_value("oz_t")
+    at.text_input(key="buy_net").input("300")
+    at.text_input(key="buy_vat").input("54")
+    at.button(key="buy_submit").click().run()
+    assert not at.exception and not at.error, [e.value for e in at.error]
+    with sf() as s:
+        lot = s.query(Lot).filter_by(asset_id=silver_id).one()
+        assert lot.qty == D("310.723733232")                    # 10 унций × 31.1034768 × 0.999
+        assert lot.qty * lot.price + lot.fees == D(354)          # НДС вошёл в себестоимость
+        assert (lot.vat, lot.purity, lot.gross_weight_g) == (D(54), D("0.999"), D("311.034768"))
+
+
+def test_blacklisted_symbol_warns_on_asset_creation(data_dir):
+    seed(data_dir)
+    at = page("p_ops", "render").run()
+    at.radio(key="na_class").set_value("etf").run()
+    at.text_input(key="na_f_etf_symbol").input("MSTY").run()
+    assert any("чёрном списке" in e.value for e in at.error)
+
+
+def test_save_scenario_from_sandbox(data_dir):
+    from app.db import Scenario
+    sf = seed(data_dir)
+    at = page("p_analysis", "render_sandbox").run()
+    box = at.selectbox(key="wi_asset")
+    btc = next(o for o in box.options if o.startswith("BTC"))
+    box.set_value(btc).run()
+    price_key = next(t.key for t in at.text_input if t.key and t.key.startswith("wi_price_"))
+    at.text_input(key=price_key).input("1000000").run()
+    metrics = {m.label: m.value for m in at.metric}
+    assert metrics["Позиция (0.5 BTC)"] == "500 000.00 $"
+    assert metrics["Налог 25.00% при продаже"] == "382 000.00 ₪"   # (500000×3.2 − 20000×3.6) × 25%
+    next(b for b in at.button if b.key and "save_price" in b.key).click().run()
+    assert not at.exception
+    with sf() as s:
+        assert s.query(Scenario).filter_by(kind="price").count() == 1

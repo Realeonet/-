@@ -18,6 +18,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.adapters.base import LiveQuote, SourceError
+from app.adapters.boi import SUPPORTED as BOI_SUPPORTED
 from app.adapters.boi import BoiSource
 from app.adapters.coingecko import MAX_FREE_DAYS, CoinGeckoSource
 from app.adapters.metals import MetalsSource
@@ -228,7 +229,8 @@ class MarketData:
     def refresh_fx(self, currencies: Iterable[str], since: date) -> None:
         """Курсы БИ для валют с даты since по сегодня (докачивает только недостающее)."""
         majors = sorted({major_currency(c)[0] for c in currencies} | {"USD"})
-        majors = [c for c in majors if c != "ILS"]
+        # валюты, которых нет у Банка Израиля, пропускаем: для них курс вводится вручную
+        majors = [c for c in majors if c != "ILS" and c in BOI_SUPPORTED]
         today = self._today()
         with self._sf() as s:
             bounds = {

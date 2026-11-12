@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
 
 import streamlit as st
 
@@ -44,7 +43,6 @@ def render_dividends() -> None:
             year_usd = sum((f.gross_year_usd for f in fc), ZERO)
             year_ils = sum((f.gross_year_ils for f in fc), ZERO)
             month_usd = sum((f.gross_month_usd for f in fc), ZERO)
-            month_ils = sum((f.gross_month_ils for f in fc), ZERO)
             st.markdown(f"**Брутто → минус {pct(rate)} → нетто**")
             a, b, c, d = st.columns(4)
             a.metric("Год, нетто $", usd(net_of_tax(year_usd, rate)), f"брутто {usd(year_usd)}", delta_color="off", delta_arrow="off")

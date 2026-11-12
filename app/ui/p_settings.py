@@ -9,8 +9,8 @@ import streamlit as st
 from app.backup import restore_blob, write_backup_file
 from app.db import FxPoint, Owner, get_setting, set_setting
 from app.security import MIN_PASSWORD_LENGTH, hash_password, verify_password
-from app.ui.common import (Session, cfg, cfg_dec, cfg_set, dec_input, flash, market, offline, parse_dec, runtime,
-                           show_flash, table, today)
+from app.ui.common import (Session, cfg, cfg_set, dec_input, flash, market, offline, parse_dec, runtime, show_flash,
+                           table, today)
 
 
 def backup_dir() -> Path:

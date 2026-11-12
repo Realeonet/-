@@ -20,8 +20,8 @@ from app.domain.tax_il import net_of_tax, simulate_sale
 from app.services import ledger
 from app.services.portfolio import load_positions, totals
 from app.ui import charts
-from app.ui.common import (Session, assets, cfg, cfg_dec, custodians, dec_input, flash, ils, market, offline,
-                           parse_dec, pct, qty, show_flash, table, tax_method, tax_note, tax_rate, today, usd)
+from app.ui.common import (Session, assets, cfg, custodians, dec_input, flash, ils, market, offline, parse_dec,
+                           pct, qty, show_flash, table, tax_method, tax_note, tax_rate, today, usd)
 
 OTHER = "Другой тикер Yahoo…"
 

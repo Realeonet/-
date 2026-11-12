@@ -237,7 +237,9 @@ def test_transfer_money_fee_goes_to_cost_and_guards(sf, market, world):
                              fee_currency="ILS")
         s.commit()
         dst = s.query(Lot).filter(Lot.custodian_id == il.id).one()
-        assert dst.fees == D(10) + D(30)                 # 90 ₪ / 3.0 = $30 добавлено к себестоимости
+        # 90 ₪ комиссии увеличивают себестоимость в шекелях ровно на 90 ₪ (по курсу дня покупки лота, 3.5)
+        cost_ils = (dst.qty * dst.price + dst.fees) * dst.fx_ccy_ils
+        assert abs(cost_ils - (D(1010) * D("3.5") + D(90))) < D("1e-20")
         with pytest.raises(ledger.LedgerError, match="совпадают"):
             ledger.transfer(s, market, spyi, il, il, TODAY, D(1))
         with pytest.raises(ledger.LedgerError, match="Не хватает"):
@@ -321,3 +323,71 @@ def test_value_history_reconstructs_from_lots(sf, market, sources, world):
         frame = value_history(s, market, date(2026, 11, 9), date(2026, 11, 11))
     assert list(frame["total_usd"].round(6)) == [1000.0, 1000.0, 600.0]
     assert frame["total_ils"].iloc[-1] == pytest.approx(600 * 3.2)
+
+
+# ---------- регрессии по итогам независимой проверки ----------
+
+@pytest.mark.parametrize("sizes,received", [
+    (("1", "1", "1"), None),          # раньше: после перевода 3 продать 3 было нельзя (не хватало 1E-28)
+    (("2", "6", "6"), None),          # раньше: перевод отклонялся «получено больше отправленного»
+    (("1", "1", "1"), "2.99"),        # комиссия сети: раньше оставалась «пыль» 2E-28
+    (("0.3", "0.7", "1.1"), "2.0999"),
+])
+def test_multi_lot_transfer_is_exact(sf, market, world, sizes, received):
+    with sf() as s:
+        btc, exch, cold = A(s, world, "BTC"), C(s, world, "exch"), C(s, world, "cold")
+        for size in sizes:
+            ledger.add_lot(s, market, btc, exch, date(2024, 1, 10), D(size), D(30000), fees=D(7))
+        total = sum(D(x) for x in sizes)
+        got = D(received) if received else total
+        ledger.transfer(s, market, btc, exch, cold, date(2025, 6, 2), total, got)
+        s.commit()
+        dest = [l for l in s.query(Lot).all() if l.custodian_id == cold.id]
+        assert sum(l.qty for l in dest) == got                       # сумма полученного точная
+        cost = sum(l.qty * l.price + l.fees for l in dest)
+        assert cost == total * 30000 + 7 * len(sizes)                # себестоимость сохранена до копейки
+        ledger.sell(s, market, btc, cold.id, TODAY, D(70000), qty=got)
+        s.commit()
+        assert all(l.qty_remaining == 0 for l in s.query(Lot).all())  # без «пыли»
+
+
+def test_stale_fx_rate_is_refused_but_manual_rate_allowed(sf, market, world):
+    with sf() as s:
+        spyi, ibkr = A(s, world, "SPYI"), C(s, world, "ibkr")
+        # ближайший курс — 10.01.2024; покупка через месяц не должна молча взять его
+        with pytest.raises(ledger.LedgerError, match="слишком далеко"):
+            ledger.add_lot(s, market, spyi, ibkr, date(2024, 2, 20), D(1), D(1))
+        ok = ledger.add_lot(s, market, spyi, ibkr, date(2024, 1, 19), D(1), D(1))   # 9 дней — допустимо
+        assert ok.fx_usd_ils == D("3.5")
+        manual = ledger.add_lot(s, market, spyi, ibkr, date(2024, 2, 20), D(1), D(1), fx_ccy_ils=D("3.6"),
+                                fx_usd_ils=D("3.6"))
+        assert manual.fx_usd_ils == D("3.6")
+
+
+def test_refresh_fx_fills_gap_behind_old_manual_rate(sf, market, sources):
+    market.set_manual_fx("EUR", date(2015, 3, 1), D("4.0"))
+    sources.boi.data = {"EUR": {date(2018, 6, 1): D("4.2")}, "USD": {}}
+    market.refresh_fx(["EUR"], date(2018, 5, 1))
+    _currencies, start, _end = sources.boi.calls[-1]
+    assert start <= date(2018, 5, 1)                 # ручной курс 2015 года не считается покрытием
+    assert market.fx("EUR", date(2018, 6, 1)) == D("4.2")
+
+
+def test_undo_swap_removes_received_lot_or_blocks(sf, market, world):
+    with sf() as s:
+        btc, eth, exch = A(s, world, "BTC"), A(s, world, "ETH"), C(s, world, "exch")
+        ledger.add_lot(s, market, btc, exch, date(2024, 1, 10), D(1), D(30000))
+        disposals, new_lot = ledger.swap(s, market, btc, eth, exch, date(2025, 6, 2), D("0.5"), D(10), D(20000))
+        s.commit()
+        group = disposals[0].group_id
+        ledger.sell(s, market, eth, exch.id, TODAY, D(2500), qty=D(1))
+        s.commit()
+        with pytest.raises(ledger.LedgerError, match="отмена обмена невозможна"):
+            ledger.delete_disposal_group(s, group)
+        s.rollback()
+        eth_sale = s.query(Disposal).filter(Disposal.kind == "sale").one()
+        ledger.delete_disposal_group(s, eth_sale.group_id)
+        ledger.delete_disposal_group(s, group)
+        s.commit()
+        only = s.query(Lot).one()                     # остался исходный лот BTC, целый
+        assert only.asset_id == btc.id and only.qty_remaining == D(1) and s.query(Disposal).count() == 0

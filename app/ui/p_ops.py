@@ -608,7 +608,7 @@ def tab_journal() -> None:
     with Session() as s:
         disposals = (s.query(Disposal).options(joinedload(Disposal.lot).joinedload(Lot.asset),
                                                joinedload(Disposal.lot).joinedload(Lot.custodian))
-                     .order_by(Disposal.date.desc(), Disposal.id.desc()).limit(200).all())
+                     .order_by(Disposal.date.desc(), Disposal.id.desc()).all())
         lots = (s.query(Lot).options(joinedload(Lot.asset), joinedload(Lot.custodian), joinedload(Lot.disposals))
                 .order_by(Lot.buy_date.desc(), Lot.id.desc()).all())
     st.markdown("**Продажи и обмены**")
@@ -626,19 +626,22 @@ def tab_journal() -> None:
             labels = {gid: f"{ds[0].date:%d.%m.%Y} · {ds[0].lot.asset.symbol} · "
                            f"{qty(sum((d.qty for d in ds), ZERO))}" for gid, ds in groups.items()}
             gid = st.selectbox("Отменить продажу / обмен", list(labels), format_func=lambda g: labels[g])
-            st.caption("Количество вернётся в лоты. Лот, полученный при обмене, нужно удалить отдельно ниже.")
+            st.caption("Количество вернётся в лоты. При отмене обмена полученный лот удаляется автоматически.")
             if st.form_submit_button("Отменить"):
-                with Session() as s:
-                    if gid.startswith("single-"):
-                        d = s.get(Disposal, int(gid.split("-")[1]))
-                        lot = s.get(Lot, d.lot_id)
-                        lot.qty_remaining = lot.qty_remaining + d.qty
-                        s.delete(d)
-                    else:
-                        ledger.delete_disposal_group(s, gid)
-                    s.commit()
-                flash("Операция отменена")
-                st.rerun()
+                try:
+                    with Session() as s:
+                        if gid.startswith("single-"):
+                            d = s.get(Disposal, int(gid.split("-")[1]))
+                            lot = s.get(Lot, d.lot_id)
+                            lot.qty_remaining = lot.qty_remaining + d.qty
+                            s.delete(d)
+                        else:
+                            ledger.delete_disposal_group(s, gid)
+                        s.commit()
+                    flash("Операция отменена")
+                    st.rerun()
+                except ledger.LedgerError as exc:
+                    st.error(str(exc))
     st.markdown("**Все лоты** (включая закрытые)")
     kinds = {"buy": "покупка", "transfer_in": "перевод", "swap_in": "обмен", "import": "импорт"}
     table([{

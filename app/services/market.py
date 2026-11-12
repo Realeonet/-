@@ -234,7 +234,9 @@ class MarketData:
         today = self._today()
         with self._sf() as s:
             bounds = {
-                c: s.query(func.min(FxPoint.date), func.max(FxPoint.date)).filter(FxPoint.currency == c).one()
+                c: s.query(func.min(FxPoint.date), func.max(FxPoint.date))
+                .filter(FxPoint.currency == c, FxPoint.source == "boi")  # ручные курсы не считаются покрытием
+                .one()
                 for c in majors
             }
         start = today

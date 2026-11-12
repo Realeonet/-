@@ -187,6 +187,7 @@ class Lot(Base):
     fx_usd_ils: Mapped[Decimal] = mapped_column(Dec())  # ₪ за $1 на дату покупки
     kind: Mapped[str] = mapped_column(String(16), default="buy")  # buy / transfer_in / swap_in / import
     origin_lot_id: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
+    group_id: Mapped[str] = mapped_column(String(36), default="")  # связывает лот обмена с его продажами
     # физические металлы
     purity: Mapped[Optional[Decimal]] = mapped_column(Dec(), nullable=True)  # проба, 0.999
     form: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # слиток / монета

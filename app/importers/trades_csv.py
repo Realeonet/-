@@ -18,6 +18,11 @@ from decimal import Decimal, InvalidOperation
 from app.domain.money import ZERO
 
 
+def _norm(value: Decimal) -> str:
+    """Каноничная запись числа: 10, 10.0 и 10.00 дают один отпечаток."""
+    return format(value.normalize(), "f") if value != 0 else "0"
+
+
 @dataclass(frozen=True)
 class ImportTrade:
     day: date
@@ -29,7 +34,8 @@ class ImportTrade:
     category: str = ""
 
     def fingerprint(self, seq: int) -> str:
-        raw = f"T|{self.day}|{self.symbol}|{self.qty}|{self.price}|{self.fee}|{self.currency}|{seq}"
+        raw = (f"T|{self.day}|{self.symbol.upper()}|{_norm(self.qty)}|{_norm(self.price)}|{_norm(self.fee)}"
+               f"|{self.currency.upper()}|{seq}")
         return hashlib.sha256(raw.encode()).hexdigest()
 
 
@@ -42,7 +48,8 @@ class ImportDividend:
     currency: str
 
     def fingerprint(self, seq: int) -> str:
-        raw = f"D|{self.day}|{self.symbol}|{self.gross}|{self.foreign_tax}|{self.currency}|{seq}"
+        raw = (f"D|{self.day}|{self.symbol.upper()}|{_norm(self.gross)}|{_norm(self.foreign_tax)}"
+               f"|{self.currency.upper()}|{seq}")
         return hashlib.sha256(raw.encode()).hexdigest()
 
 
@@ -88,6 +95,26 @@ def to_date(raw: str | None, fmt: str = "auto") -> date:
     raise ValueError(f"непонятная дата «{raw}»")
 
 
+AMBIGUOUS = ("%d/%m/%Y", "%m/%d/%Y")
+
+
+def detect_date_format(values: list[str]) -> tuple[str, bool]:
+    """Один формат даты на весь файл. Возвращает (формат, неоднозначно ли).
+    Неоднозначно — когда все даты читаются и как день/месяц, и как месяц/день."""
+    cleaned = [re.split(r"[ T,;]", v.strip(), maxsplit=1)[0] for v in values if (v or "").strip()]
+    fitting = []
+    for fmt in DATE_FORMATS:
+        try:
+            for v in cleaned:
+                datetime.strptime(v, fmt)
+        except ValueError:
+            continue
+        fitting.append(fmt)
+    if not cleaned or not fitting:
+        return "auto", False
+    return fitting[0], all(f in fitting for f in AMBIGUOUS)
+
+
 def decode_bytes(data: bytes) -> str:
     for enc in ("utf-8-sig", "utf-16", "cp1255", "cp1251", "latin-1"):
         try:
@@ -109,6 +136,8 @@ def parse_ibkr(text: str) -> ParsedImport:
     withholding: dict[tuple[date, str, str], Decimal] = {}
     raw_dividends: list[tuple[date, str, Decimal, str]] = []
     skipped_categories: set[str] = set()
+    # В отчёте с детализацией исполнений строки Trade — это части строки Order: берём что-то одно.
+    by_kind: dict[str, list[ImportTrade]] = {"Order": [], "Trade": []}
     for line_no, row in enumerate(csv.reader(io.StringIO(text)), start=1):
         if len(row) < 3:
             continue
@@ -121,7 +150,8 @@ def parse_ibkr(text: str) -> ParsedImport:
         rec = dict(zip(headers[section], row))
         try:
             if section == "Trades":
-                if rec.get("DataDiscriminator", "Order") not in ("Order", "Trade"):
+                discriminator = rec.get("DataDiscriminator", "Order")
+                if discriminator not in ("Order", "Trade"):
                     continue
                 category = rec.get("Asset Category", "")
                 if category not in IBKR_CATEGORIES:
@@ -130,7 +160,7 @@ def parse_ibkr(text: str) -> ParsedImport:
                 qty = to_decimal(rec.get("Quantity"))
                 if qty == 0:
                     continue
-                result.trades.append(
+                by_kind[discriminator].append(
                     ImportTrade(
                         day=to_date(rec.get("Date/Time")),
                         symbol=rec.get("Symbol", "").strip(),
@@ -157,6 +187,13 @@ def parse_ibkr(text: str) -> ParsedImport:
                     withholding[key] = withholding.get(key, ZERO) - amount  # в файле налог отрицательный
         except ValueError as exc:
             result.errors.append(f"Строка {line_no} ({section}): {exc}")
+
+    result.trades = by_kind["Order"] or by_kind["Trade"]
+    if by_kind["Order"] and by_kind["Trade"]:
+        result.warnings.append(
+            f"В отчёте есть детализация исполнений ({len(by_kind['Trade'])} строк) — она пропущена, "
+            "импортируются итоговые строки ордеров."
+        )
 
     merged: dict[tuple[date, str, str], Decimal] = {}
     for day, symbol, amount, ccy in raw_dividends:
@@ -232,16 +269,27 @@ def parse_generic(text: str, mapping: dict) -> ParsedImport:
         return result
     buy, sell, div = _words(cfg["buy_values"]), _words(cfg["sell_values"]), _words(cfg["dividend_values"])
     comma = bool(cfg["decimal_comma"])
+    rows = list(reader)
+    date_format = cfg["date_format"]
+    if date_format == "auto":
+        date_format, ambiguous = detect_date_format([r.get(cfg["date_col"]) or "" for r in rows])
+        if ambiguous:
+            result.warnings.append(
+                "Даты читаются и как день/месяц, и как месяц/день. Принято «день/месяц/год». "
+                "Если файл в американском формате — выберите формат даты явно."
+            )
 
     def col(rec: dict, key: str) -> str | None:
         name = cfg.get(key)
         return rec.get(name) if name else None
 
-    for line_no, rec in enumerate(reader, start=2):
+    for line_no, rec in enumerate(rows, start=2):
         if not any((v or "").strip() for v in rec.values()):
             continue
         try:
-            day = to_date(col(rec, "date_col"), cfg["date_format"])
+            raw_day = col(rec, "date_col") or ""
+            day = to_date(raw_day if date_format == "auto" else re.split(r"[ T,;]", raw_day.strip(), maxsplit=1)[0],
+                          date_format)
             symbol = (col(rec, "symbol_col") or "").strip()
             if not symbol:
                 raise ValueError("пустой тикер")

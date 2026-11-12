@@ -43,6 +43,7 @@ def seed(data_dir):
     m = MarketData(sf)
     m.set_manual_fx("USD", date(2024, 1, 1), D("3.6"))
     m.set_manual_fx("USD", date(2025, 6, 1), D("3.2"))
+    m.set_manual_fx("USD", date.today(), D("3.2"))
     with sf() as s:
         me, wife = s.query(Owner).order_by(Owner.id).all()
         broker = Custodian(name="Тест-брокер", kind="broker", owner_id=me.id, country="US", fee_trade=D("2.5"))

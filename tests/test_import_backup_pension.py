@@ -8,10 +8,11 @@ import pytest
 from app.adapters.gov_il import OfficialRecord, parse_record
 from app.backup import auto_backup, decrypt_blob, encrypt_session, restore_blob
 from app.config import load_pension_config
-from app.db import (Asset, Custodian, Disposal, Dividend, Lot, Owner, PensionAccount, PricePoint, Setting,
+from app.db import (Asset, Custodian, Disposal, Dividend, FxPoint, Lot, Owner, PensionAccount, PricePoint, Setting,
                     get_engine, get_setting, init_db, make_session_factory, set_setting)
 from app.domain.pension import validate_weights
-from app.importers.trades_csv import csv_headers, parse_generic, parse_ibkr, to_date, to_decimal
+from app.importers.trades_csv import (ImportTrade, csv_headers, detect_date_format, parse_generic, parse_ibkr,
+                                      to_date, to_decimal)
 from app.security import hash_password, verify_password
 from app.services import ledger
 from app.services.importing import apply_import, unknown_symbols
@@ -137,13 +138,16 @@ def test_backup_roundtrip_restores_everything_but_cache_and_password(sf, market,
                          "foreign_bonds": D(5), "cash_other": D(5)})
         s.add(acc)
         s.add(PricePoint(key="yfinance:SPYI", date=date(2026, 1, 1), close=D(50)))
+        s.add(FxPoint(currency="EUR", date=date(2026, 1, 2), rate=D("3.9"), source="boi"))
+        market.set_manual_fx("HKD", date(2026, 1, 2), D("0.41"))
         set_setting(s, "password_hash", "OLD")
         set_setting(s, "estate_warn_usd", "40000")
         s.commit()
         blob = encrypt_session(s, "correct horse battery")
     assert b"12345.67" not in blob and "Тест".encode() not in blob
     payload = decrypt_blob(blob, "correct horse battery")
-    assert "price_points" not in payload["tables"] and "fx_points" not in payload["tables"]
+    assert "price_points" not in payload["tables"] and "quotes" not in payload["tables"]
+    assert {r["source"] for r in payload["tables"]["fx_points"]} == {"manual"}   # только введённые вручную
 
     engine = get_engine(":memory:")
     init_db(engine)
@@ -163,6 +167,9 @@ def test_backup_roundtrip_restores_everything_but_cache_and_password(sf, market,
         assert get_setting(d, "password_hash") == "CURRENT"          # пароль входа остаётся текущим
         assert get_setting(d, "estate_warn_usd") == "40000"
         assert d.query(Custodian).filter_by(withholds_il_tax=True).count() == 1
+        # ручной курс валюты, которой нет у Банка Израиля, переживает бэкап; скачиваемые — нет
+        assert d.get(FxPoint, ("HKD", date(2026, 1, 2))).rate == D("0.41")
+        assert d.get(FxPoint, ("EUR", date(2026, 1, 2))) is None
 
 
 def test_backup_rejects_wrong_passphrase_and_garbage(sf):
@@ -277,3 +284,37 @@ def test_official_records_parse_and_apply(sf):
         count2, _ = apply_official_records(acc, [rec], "data.gov.il", update_weights=False)
         s.commit()
         assert count2 == 1 and len(acc.official) == 2                 # без дублей
+
+
+# ---------- регрессии по итогам независимой проверки ----------
+
+def test_ibkr_execution_rows_are_not_counted_twice():
+    head = "Trades,Header,DataDiscriminator,Asset Category,Currency,Symbol,Date/Time,Quantity,T. Price,Comm/Fee\n"
+    text = head + (
+        'Trades,Data,Order,Stocks,USD,SPYI,"2025-06-02, 10:00:00",10,50,-1\n'
+        'Trades,Data,Trade,Stocks,USD,SPYI,"2025-06-02, 10:00:00",4,50,-0.4\n'
+        'Trades,Data,Trade,Stocks,USD,SPYI,"2025-06-02, 10:00:01",6,50,-0.6\n'
+    )
+    p = parse_ibkr(text)
+    assert [t.qty for t in p.trades] == [D(10)] and any("детализация" in w for w in p.warnings)
+    only_fills = parse_ibkr(head + 'Trades,Data,Trade,Stocks,USD,SPYI,"2025-06-02, 10:00:00",4,50,-0.4\n')
+    assert [t.qty for t in only_fills.trades] == [D(4)]
+
+
+def test_date_format_is_chosen_once_per_file():
+    assert detect_date_format(["03/04/2026", "04/13/2026"]) == ("%m/%d/%Y", False)   # 13 — не месяц
+    assert detect_date_format(["03/04/2026", "13/04/2026"]) == ("%d/%m/%Y", False)
+    assert detect_date_format(["03/04/2026", "05/06/2026"]) == ("%d/%m/%Y", True)    # неоднозначно
+    us = "Date,Ticker,Qty,Price\n03/04/2026,SPYI,1,50\n04/13/2026,SPYI,1,50\n"
+    mapping = {"date_col": "Date", "symbol_col": "Ticker", "qty_col": "Qty", "price_col": "Price"}
+    p = parse_generic(us, mapping)
+    assert [t.day for t in p.trades] == [date(2026, 3, 4), date(2026, 4, 13)] and not p.warnings
+    amb = parse_generic("Date,Ticker,Qty,Price\n03/04/2026,SPYI,1,50\n", mapping)
+    assert amb.trades[0].day == date(2026, 4, 3) and any("день/месяц" in w for w in amb.warnings)
+
+
+def test_fingerprint_ignores_number_formatting_and_case():
+    a = ImportTrade(date(2025, 6, 2), "SPYI", D("10"), D("50"), D("1"), "USD")
+    b = ImportTrade(date(2025, 6, 2), "spyi", D("10.0"), D("50.00"), D("1.000"), "usd")
+    assert a.fingerprint(0) == b.fingerprint(0) != a.fingerprint(1)
+    assert a.fingerprint(0) != ImportTrade(date(2025, 6, 2), "SPYI", D("11"), D("50"), D("1"), "USD").fingerprint(0)

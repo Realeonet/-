@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Mapping
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,10 @@ from app.db import Asset, Custodian, Disposal, Dividend, Lot, Transfer, Transfer
 from app.domain.lots import LotState, fifo_allocate, manual_allocate, split_for_transfer
 from app.domain.money import ZERO
 from app.services.market import MarketData
+
+
+QTY_STEP = Decimal("1E-18")  # шаг дробления количества между лотами (точнее любой монеты)
+MAX_FX_AGE_DAYS = 10  # курс БИ не публикуется в выходные и праздники; больший разрыв — признак пробела в данных
 
 
 class LedgerError(ValueError):
@@ -52,6 +56,16 @@ def resolve_fx(
             f"Нет курса Банка Израиля на {day:%d.%m.%Y} для {currency}. "
             "Обновите курсы (кнопка «Обновить данные») или введите курс вручную."
         )
+    for code, given in ((currency, fx_ccy_ils), ("USD", fx_usd_ils)):
+        if given is not None:
+            continue
+        rate_day = market.fx_date(code, day)
+        if rate_day is not None and (day - rate_day).days > MAX_FX_AGE_DAYS:
+            raise LedgerError(
+                f"Ближайший известный курс {code} — от {rate_day:%d.%m.%Y}, это слишком далеко от "
+                f"{day:%d.%m.%Y}. Обновите курсы или введите курс на эту дату вручную "
+                "(«Настройки → Курсы и данные»)."
+            )
     if ccy <= 0 or usd <= 0:
         raise LedgerError("Курс валюты должен быть больше нуля")
     return ccy, usd
@@ -187,8 +201,21 @@ def sell(
 
 
 def delete_disposal_group(s: Session, group_id: str) -> int:
-    """Отмена продажи: количество возвращается в лоты."""
+    """Отмена продажи или обмена: количество возвращается в лоты.
+    Для обмена удаляется и полученный лот — если он ещё не продавался и не переводился."""
     rows = s.query(Disposal).filter(Disposal.group_id == group_id).all()
+    if group_id:
+        for received in s.query(Lot).filter(Lot.group_id == group_id).all():
+            moved = (
+                s.query(TransferPart)
+                .filter((TransferPart.source_lot_id == received.id) | (TransferPart.dest_lot_id == received.id))
+                .count()
+            )
+            if received.disposals or received.qty_remaining != received.qty or moved:
+                raise LedgerError(
+                    "Полученный при обмене лот уже продавался или переводился — отмена обмена невозможна"
+                )
+            s.delete(received)
     for d in rows:
         lot = s.get(Lot, d.lot_id)
         lot.qty_remaining = lot.qty_remaining + d.qty
@@ -249,16 +276,26 @@ def transfer(
     )
     s.add(record)
     s.flush()
-    for lot, q in alloc:
+    received_left = qty_received
+    for index, (lot, q) in enumerate(alloc):
         if day < lot.buy_date:
             raise LedgerError(f"Дата перевода раньше даты покупки лота №{lot.id}")
-        share = q / total_sent
+        # Делим полученное между лотами без потери точности: без комиссии сети — ровно q,
+        # иначе пропорционально, а последнему лоту достаётся точный остаток.
+        if qty_received == total_sent:
+            part_received = q
+        elif index == len(alloc) - 1:
+            part_received = received_left
+        else:
+            part_received = (qty_received * q / total_sent).quantize(QTY_STEP, rounding=ROUND_DOWN)
+        received_left -= part_received
         extra_ccy = ZERO
         if fee_ils > 0:
-            lot_fx, _ = resolve_fx(market, lot.currency, day)
-            extra_ccy = fee_ils * share / lot_fx
+            # Комиссия добавляется к себестоимости в ₪: делим на курс дня ПОКУПКИ лота,
+            # потому что именно по нему себестоимость лота потом переводится в шекели.
+            extra_ccy = fee_ils * q / total_sent / lot.fx_ccy_ils
         try:
-            split = split_for_transfer(lot_state(lot), q, qty_received * share, extra_ccy)
+            split = split_for_transfer(lot_state(lot), q, part_received, extra_ccy)
         except ValueError as exc:
             raise LedgerError(str(exc)) from exc
         old_qty = lot.qty
@@ -369,6 +406,7 @@ def swap(
         s, market, to_asset, to_custodian or custodian, day, qty_to, (value_usd - fee_usd) / qty_to,
         currency="USD", kind="swap_in", note=note, today=day,
     )
+    new_lot.group_id = disposals[0].group_id
     return disposals, new_lot
 
 

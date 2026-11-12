@@ -1,7 +1,8 @@
 """Зашифрованный бэкап: личные таблицы → JSON → Fernet (ключ из парольной фразы через scrypt).
 
 Формат файла: строка «FINBK2», base64(соль), затем токен Fernet.
-В бэкап входят только личные данные; кэш котировок и курсов не входит (он скачивается заново).
+В бэкап входят личные данные и курсы, введённые вручную; кэш котировок и официальных курсов
+не входит (он скачивается заново).
 Восстановление ЗАМЕНЯЕТ личные данные в базе, пароль входа остаётся текущим.
 """
 
@@ -23,7 +24,8 @@ from app.db import Base, Dec, DivPoint, FxPoint, PricePoint, Quote, Setting
 
 MAGIC = b"FINBK2"
 FORMAT_VERSION = 2
-CACHE_TABLES = {PricePoint.__tablename__, Quote.__tablename__, DivPoint.__tablename__, FxPoint.__tablename__}
+CACHE_TABLES = {PricePoint.__tablename__, Quote.__tablename__, DivPoint.__tablename__}
+FX_TABLE = FxPoint.__tablename__  # из курсов в бэкап идут только введённые вручную: их нельзя скачать заново
 KEEP_SETTINGS = ("password_hash",)  # не переносятся из бэкапа: остаётся текущий пароль входа
 AUTO_PREFIX = "auto-"
 AUTO_KEEP = 30
@@ -72,6 +74,8 @@ def dump_payload(session: Session) -> dict:
                 row["key"] in KEEP_SETTINGS or row["key"].startswith("refreshed:")
             ):
                 continue
+            if table.name == FX_TABLE and row["source"] != "manual":
+                continue
             out.append({c.name: _to_json(row[c.name]) for c in table.columns})
         tables[table.name] = out
     return {"version": FORMAT_VERSION, "created": datetime.now().isoformat(timespec="seconds"), "tables": tables}
@@ -84,6 +88,8 @@ def load_payload(session: Session, payload: dict) -> None:
     for table in reversed(tables):
         if table.name == Setting.__tablename__:
             session.execute(table.delete().where(table.c.key.notin_(KEEP_SETTINGS)))
+        elif table.name == FX_TABLE:
+            session.execute(table.delete().where(table.c.source == "manual"))
         else:
             session.execute(table.delete())
     for table in tables:
@@ -94,6 +100,9 @@ def load_payload(session: Session, payload: dict) -> None:
             for row in rows
             if not (table.name == Setting.__tablename__ and row.get("key") in KEEP_SETTINGS)
         ]
+        if table.name == FX_TABLE:
+            for row in prepared:  # ручной курс из бэкапа заменяет скачанный на ту же дату
+                session.execute(table.delete().where(table.c.currency == row["currency"], table.c.date == row["date"]))
         if prepared:
             session.execute(table.insert(), prepared)
     session.flush()
